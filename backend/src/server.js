@@ -6,6 +6,7 @@ const cors = require('cors');
 const authRouter = require('./routes/auth');
 const preferencesRouter = require('./routes/preferences');
 const feedRouter = require('./routes/feed');
+const adminRouter = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/preferences', preferencesRouter);
 app.use('/api/feed', feedRouter);
+app.use('/api/admin', adminRouter);
 
 app.get('/health', (req, res) => {
   res.send({ status: 'healthy', db_state: mongoose.connection.readyState });

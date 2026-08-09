@@ -112,12 +112,21 @@ class RankerService:
             return recs, latency, True
             
         # 2. Candidate Generation
-        candidates = self.cg.generate_candidates(user_history, num_candidates=50)
-        
-        # 3. Features
         use_live = self.is_redis_available()
         redis_conn = self.redis_client if use_live else None
         
+        candidates = []
+        if use_live:
+            # Fetch 50 most recent live articles from Redis
+            live_candidates = redis_conn.zrevrange('news:recent', 0, 49)
+            if live_candidates:
+                candidates = live_candidates
+                
+        if not candidates:
+            # Fallback to static candidates
+            candidates = self.cg.generate_candidates(user_history, num_candidates=50)
+        
+        # 3. Features
         df_feats = self.fe.build_features(user_id, user_history, candidates, live_redis_client=redis_conn)
         
         if df_feats.empty:

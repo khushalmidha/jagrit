@@ -34,11 +34,23 @@ class FeatureEngineer:
         user_cat_diversity = self._compute_category_diversity(history_cats)
         
         for news_id in candidate_news_ids:
-            if news_id not in self.news_dict:
+            cat = "news"
+            title_len = 0
+            abs_len = 0
+            
+            if news_id in self.news_dict:
+                article = self.news_dict[news_id]
+                cat = article['category']
+                title_len = article.get('title_word_count', 0)
+                abs_len = len(str(article.get('abstract', '')).split())
+            elif live_redis_client:
+                cat = live_redis_client.hget(f"article:{news_id}", "category") or "news"
+                title = live_redis_client.hget(f"article:{news_id}", "title") or ""
+                abstract = live_redis_client.hget(f"article:{news_id}", "abstract") or ""
+                title_len = len(title.split())
+                abs_len = len(abstract.split())
+            else:
                 continue
-                
-            article = self.news_dict[news_id]
-            cat = article['category']
             
             # category_match_score
             cat_match = 0.0
@@ -65,8 +77,8 @@ class FeatureEngineer:
                 'category_match_score': cat_match,
                 'article_popularity': article_popularity,
                 'article_recency_hours': article_recency_hours,
-                'title_length': article.get('title_word_count', 0),
-                'abstract_length': len(str(article.get('abstract', '')).split()),
+                'title_length': title_len,
+                'abstract_length': abs_len,
                 'user_total_clicks_in_history': user_total_clicks,
                 'user_category_diversity': user_cat_diversity
             })
