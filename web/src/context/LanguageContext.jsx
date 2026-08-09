@@ -41,14 +41,36 @@ export const LanguageProvider = ({ children }) => {
         'Top Stories': 'Top Stories',
         'Login': 'Login',
         'Logout': 'Logout',
-        'Preferences': 'Preferences'
+        'Preferences': 'Preferences',
+        'Personalized Edition • Powered by Jagrit AI': 'Personalized Edition • Powered by Jagrit AI',
+        'TOP TOPICS': 'TOP TOPICS',
+        'Politics': 'Politics',
+        'World': 'World',
+        'Business': 'Business',
+        'Technology': 'Technology',
+        'Sports': 'Sports',
+        'Jagrit Newsletter': 'Jagrit Newsletter',
+        'Get the top stories delivered to your inbox daily.': 'Get the top stories delivered to your inbox daily.',
+        'Your Email': 'Your Email',
+        'Subscribe': 'Subscribe'
       },
       'hi': {
         'For You': 'आपके लिए',
         'Top Stories': 'मुख्य खबरें',
         'Login': 'लॉग इन',
         'Logout': 'लॉग आउट',
-        'Preferences': 'प्राथमिकताएं'
+        'Preferences': 'प्राथमिकताएं',
+        'Personalized Edition • Powered by Jagrit AI': 'व्यक्तिगत संस्करण • जाग्रत AI द्वारा संचालित',
+        'TOP TOPICS': 'शीर्ष विषय',
+        'Politics': 'राजनीति',
+        'World': 'दुनिया',
+        'Business': 'व्यापार',
+        'Technology': 'तकनीक',
+        'Sports': 'खेल',
+        'Jagrit Newsletter': 'जाग्रत न्यूज़लैटर',
+        'Get the top stories delivered to your inbox daily.': 'हर दिन अपने इनबॉक्स में मुख्य खबरें पाएं।',
+        'Your Email': 'आपका ईमेल',
+        'Subscribe': 'सब्सक्राइब करें'
       }
     };
     return dict[lang][key] || key;
