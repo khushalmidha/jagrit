@@ -7,7 +7,7 @@ from src.candidate_generation import CandidateGenerator
 from src.features import FeatureEngineer
 
 class RankerService:
-    def __init__(self, redis_host='localhost', redis_port=6379):
+    def __init__(self, redis_host='localhost', redis_port=6379, redis_url=None):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
         # Load Model
@@ -31,12 +31,19 @@ class RankerService:
         self.cg = CandidateGenerator(self.df_news, self.df_interactions)
         
         # Redis Client
-        self.redis_client = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
+        try:
+            if redis_url:
+                self.redis_client = redis.from_url(redis_url, decode_responses=True)
+            else:
+                self.redis_client = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
+        except Exception as e:
+            print(f"Error initializing Redis client: {e}")
+            self.redis_client = None
         
     def is_redis_available(self):
         try:
             return self.redis_client.ping()
-        except redis.ConnectionError:
+        except (redis.ConnectionError, AttributeError):
             return False
             
     def _get_user_history(self, user_id):

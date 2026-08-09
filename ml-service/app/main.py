@@ -28,9 +28,10 @@ ranker_service = None
 def startup_event():
     global ranker_service
     logger.info("Initializing RankerService...")
-    # Read redis host from env if running in docker
+    # Read redis config from env
+    redis_url = os.environ.get("REDIS_URL")
     redis_host = os.environ.get("REDIS_HOST", "localhost")
-    ranker_service = RankerService(redis_host=redis_host)
+    ranker_service = RankerService(redis_host=redis_host, redis_url=redis_url)
     logger.info("RankerService initialized.")
 
 @app.post("/recommend", response_model=RecommendResponse)
