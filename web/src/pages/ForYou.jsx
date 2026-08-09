@@ -40,13 +40,39 @@ const ForYou = () => {
   }
 
   // Fallback to mock data if the backend/ML service is down and feed is empty
-  const displayFeed = feed.length > 0 ? feed : [
-    { news_id: 'M1', title: 'Global Markets Rally as Tech Stocks Surge', abstract: 'Major indices hit new highs today following better-than-expected earnings reports from leading tech companies.', category: 'business', rank: 1, score: 0.95, isMock: true },
-    { news_id: 'M2', title: 'New Breakthrough in Renewable Energy Tech', abstract: 'Scientists have developed a new solar panel design that increases efficiency by 30%, potentially revolutionizing the green energy sector.', category: 'technology', rank: 2, score: 0.91, isMock: true },
-    { news_id: 'M3', title: 'World Cup Finals: An Unforgettable Match', abstract: 'The thrilling finale went to extra time, ending with a spectacular goal that will be remembered for decades.', category: 'sports', rank: 3, score: 0.88, isMock: true },
-    { news_id: 'M4', title: 'Elections 2026: What You Need to Know', abstract: 'A comprehensive breakdown of the upcoming elections, key candidates, and major policy debates shaping the nation.', category: 'politics', rank: 4, score: 0.85, isMock: true },
-    { news_id: 'M5', title: 'The Future of AI in Healthcare', abstract: 'How artificial intelligence is accelerating drug discovery and personalizing patient care around the globe.', category: 'technology', rank: 5, score: 0.82, isMock: true }
+  const mockFeed = [
+    { 
+      news_id: 'M1', 
+      title: lang === 'hi' ? 'टेक शेयरों में उछाल के साथ वैश्विक बाजारों में तेजी' : 'Global Markets Rally as Tech Stocks Surge', 
+      abstract: lang === 'hi' ? 'प्रमुख टेक कंपनियों की बेहतर आय रिपोर्ट के बाद आज प्रमुख सूचकांक नई ऊंचाइयों पर पहुंच गए।' : 'Major indices hit new highs today following better-than-expected earnings reports from leading tech companies.', 
+      category: 'business', rank: 1, score: 0.95, isMock: true 
+    },
+    { 
+      news_id: 'M2', 
+      title: lang === 'hi' ? 'नवीकरणीय ऊर्जा तकनीक में नई सफलता' : 'New Breakthrough in Renewable Energy Tech', 
+      abstract: lang === 'hi' ? 'वैज्ञानिकों ने एक नया सोलर पैनल डिजाइन विकसित किया है जो दक्षता को 30% तक बढ़ाता है।' : 'Scientists have developed a new solar panel design that increases efficiency by 30%, potentially revolutionizing the green energy sector.', 
+      category: 'technology', rank: 2, score: 0.91, isMock: true 
+    },
+    { 
+      news_id: 'M3', 
+      title: lang === 'hi' ? 'विश्व कप फाइनल: एक अविस्मरणीय मैच' : 'World Cup Finals: An Unforgettable Match', 
+      abstract: lang === 'hi' ? 'रोमांचक फाइनल अतिरिक्त समय तक गया, जिसका अंत एक शानदार गोल के साथ हुआ।' : 'The thrilling finale went to extra time, ending with a spectacular goal that will be remembered for decades.', 
+      category: 'sports', rank: 3, score: 0.88, isMock: true 
+    },
+    { 
+      news_id: 'M4', 
+      title: lang === 'hi' ? 'चुनाव 2026: आपको क्या जानना चाहिए' : 'Elections 2026: What You Need to Know', 
+      abstract: lang === 'hi' ? 'आगामी चुनावों, प्रमुख उम्मीदवारों और राष्ट्र को आकार देने वाली प्रमुख नीतिगत बहसों का व्यापक विवरण।' : 'A comprehensive breakdown of the upcoming elections, key candidates, and major policy debates shaping the nation.', 
+      category: 'politics', rank: 4, score: 0.85, isMock: true 
+    },
+    { 
+      news_id: 'M5', 
+      title: lang === 'hi' ? 'स्वास्थ्य सेवा में AI का भविष्य' : 'The Future of AI in Healthcare', 
+      abstract: lang === 'hi' ? 'कैसे कृत्रिम बुद्धिमत्ता दवा खोज को तेज कर रही है और दुनिया भर में रोगी देखभाल को व्यक्तिगत बना रही है।' : 'How artificial intelligence is accelerating drug discovery and personalizing patient care around the globe.', 
+      category: 'technology', rank: 5, score: 0.82, isMock: true 
+    }
   ];
+  const displayFeed = feed.length > 0 ? feed : mockFeed;
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
