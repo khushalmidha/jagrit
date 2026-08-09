@@ -3,9 +3,17 @@ const Redis = require('ioredis');
 const { translateFeed } = require('./translationService');
 const crypto = require('crypto');
 
+const redisOptions = process.env.REDIS_URL && process.env.REDIS_URL.startsWith('rediss://') 
+  ? { tls: { rejectUnauthorized: false } } 
+  : {};
+
 const redis = process.env.REDIS_URL 
-  ? new Redis(process.env.REDIS_URL) 
+  ? new Redis(process.env.REDIS_URL, redisOptions) 
   : new Redis({ host: 'localhost', port: 6379 });
+
+redis.on('error', (err) => {
+  console.error('Redis connection error:', err.message);
+});
 
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
 
