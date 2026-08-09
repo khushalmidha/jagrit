@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import axios from 'axios';
-import { useLanguage } from '../context/LanguageContext';
+import { LanguageContext } from '../context/LanguageContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const NewsCard = ({ article, isHero = false, token }) => {
   const [showScore, setShowScore] = useState(false);
   const [saved, setSaved] = useState(false);
-  const { language } = useLanguage();
+  const { lang } = useContext(LanguageContext);
 
   // Generate a consistent pseudo-random image from picsum based on news_id
   // MIND dataset doesn't have images.
@@ -34,8 +34,8 @@ const NewsCard = ({ article, isHero = false, token }) => {
     }
   };
 
-  const displayTitle = language === 'hi' && article.title_hi ? article.title_hi : article.title;
-  const displayAbstract = language === 'hi' && article.abstract_hi ? article.abstract_hi : (article.abstract || 'Read the full story to know more about this breaking development and its implications on the global landscape.');
+  const displayTitle = lang === 'hi' && article.title_hi ? article.title_hi : article.title;
+  const displayAbstract = lang === 'hi' && article.abstract_hi ? article.abstract_hi : (article.abstract || 'Read the full story to know more about this breaking development and its implications on the global landscape.');
 
   return (
     <div className={`flex flex-col bg-white overflow-hidden ${isHero ? 'md:flex-row border-b-[4px] border-black pb-8' : 'border-b border-gray-300 pb-6'}`}>
