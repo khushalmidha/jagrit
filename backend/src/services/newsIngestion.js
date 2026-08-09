@@ -27,6 +27,13 @@ const ingestLiveNews = async () => {
   }
 
   try {
+    // Check cooldown to avoid hitting NewsAPI limits (10 minutes)
+    const lastFetch = await redis.get('last_news_fetch');
+    if (lastFetch) {
+      console.log("News fetched recently. Skipping to avoid API limits.");
+      return 0; // indicates skipped
+    }
+
     console.log("Fetching live news from NewsAPI...");
     
     // Fetch US top headlines as a baseline
@@ -91,6 +98,10 @@ const ingestLiveNews = async () => {
     pipeline.zremrangebyrank('news:recent', 0, -1001);
     
     await pipeline.exec();
+    
+    // Set 10-minute cooldown (600 seconds)
+    await redis.set('last_news_fetch', Date.now(), 'EX', 600);
+    
     console.log("Live news successfully ingested into Redis!");
     
     return translatedArticles.length;
