@@ -155,11 +155,23 @@ class RankerService:
         # 5. Format Response
         recs = []
         for rank, row in enumerate(top_n.itertuples(), 1):
-            article = self.news_dict[row.news_id]
+            if row.news_id in self.news_dict:
+                article = self.news_dict[row.news_id]
+                title = article['title']
+                category = article['category']
+                abstract = article.get('abstract', '')
+            elif use_live:
+                title = redis_conn.hget(f"article:{row.news_id}", "title") or "Live News"
+                category = redis_conn.hget(f"article:{row.news_id}", "category") or "news"
+                abstract = redis_conn.hget(f"article:{row.news_id}", "abstract") or ""
+            else:
+                continue
+                
             recs.append({
                 "news_id": row.news_id,
-                "title": article['title'],
-                "category": article['category'],
+                "title": title,
+                "abstract": abstract,
+                "category": category,
                 "score": float(row.score),
                 "rank": rank
             })
