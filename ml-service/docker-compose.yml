@@ -29,15 +29,8 @@ services:
       - "6379:6379"
     command: redis-server --appendonly yes
 
-  mongo:
-    image: mongo:6.0
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
-  ml-service:
-    build: ./ml-service
+  api:
+    build: .
     ports:
       - "8000:8000"
     environment:
@@ -45,29 +38,5 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./ml-service/data:/app/data
-      - ./ml-service/models:/app/models
-
-  backend:
-    build: ./backend
-    ports:
-      - "5000:5000"
-    environment:
-      - PORT=5000
-      - MONGODB_URI=mongodb://mongo:27017/jagrit
-      - JWT_SECRET=demo_jwt_secret_123
-      - ML_SERVICE_URL=http://ml-service:8000
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    depends_on:
-      - mongo
-      - ml-service
-
-  web:
-    build: ./web
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-
-volumes:
-  mongo-data:
+      - ./data:/app/data
+      - ./models:/app/models

@@ -13,3 +13,8 @@ experiments/*.md
 !experiments/replay_evaluator.py
 !experiments/stats.py
 !experiments/run_experiment.py
+
+node_modules/
+.env
+dist/
+.env.local
