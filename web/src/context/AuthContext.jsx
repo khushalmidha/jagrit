@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || ${API_URL};
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const AuthContext = createContext();
 
@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       if (token) {
         try {
-          const res = await axios.get(${API_URL}, {
+          const res = await axios.get(`${API_URL}/api/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setUser(res.data);
@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
   const loginAsGuest = async () => {
     try {
       // Try logging in with the shared guest account
-      const res = await axios.post(${API_URL}, { 
+      const res = await axios.post(`${API_URL}/api/auth/login`, { 
         email: 'guest@jagrit.com', 
         password: 'guestpassword123' 
       });
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       // If it doesn't exist, register it with a cold-start MIND ID
       try {
-        const res = await axios.post(${API_URL}, { 
+        const res = await axios.post(`${API_URL}/api/auth/register`, { 
           name: 'Guest Reader',
           email: 'guest@jagrit.com', 
           password: 'guestpassword123',
@@ -61,14 +61,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const res = await axios.post(${API_URL}, { email, password });
+    const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
     setToken(res.data.token);
     setUser(res.data.user);
     localStorage.setItem('token', res.data.token);
   };
 
   const register = async (name, email, password) => {
-    const res = await axios.post(${API_URL}, { name, email, password });
+    const res = await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
     setToken(res.data.token);
     setUser(res.data.user);
     localStorage.setItem('token', res.data.token);

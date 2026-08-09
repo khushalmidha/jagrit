@@ -6,7 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import { LanguageContext } from '../context/LanguageContext';
 import { Link } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || ${API_URL};
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ForYou = () => {
   const { user, token } = useContext(AuthContext);
@@ -22,7 +22,7 @@ const ForYou = () => {
     }
 
     setLoading(true);
-    axios.get(`/api/feed?lang=${lang}`, {
+    axios.get(`${API_URL}/api/feed?lang=${lang}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     .then(res => {
