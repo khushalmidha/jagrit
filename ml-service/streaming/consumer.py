@@ -1,16 +1,24 @@
+import os
 import json
 import argparse
 from kafka import KafkaConsumer
 import redis
 
 def consume_and_update(bootstrap_servers, redis_host, redis_port):
+    sasl_user = os.environ.get("UPSTASH_KAFKA_REST_USERNAME") or os.environ.get("KAFKA_SASL_USERNAME")
+    sasl_pass = os.environ.get("UPSTASH_KAFKA_REST_PASSWORD") or os.environ.get("KAFKA_SASL_PASSWORD")
+
     consumer = KafkaConsumer(
         'user-events',
         bootstrap_servers=bootstrap_servers,
         value_deserializer=lambda m: json.loads(m.decode('utf-8')),
         auto_offset_reset='earliest',
         enable_auto_commit=True,
-        group_id='feature-updater-group'
+        group_id='feature-updater-group',
+        security_protocol='SASL_SSL' if sasl_user else 'PLAINTEXT',
+        sasl_mechanism='SCRAM-SHA-256' if sasl_user else None,
+        sasl_plain_username=sasl_user,
+        sasl_plain_password=sasl_pass
     )
     
     r = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)

@@ -24,9 +24,16 @@ def replay_events(speed_multiplier, bootstrap_servers):
     # Create lookup for category
     news_cat = df_news.set_index('news_id')['category'].to_dict()
     
+    sasl_user = os.environ.get("UPSTASH_KAFKA_REST_USERNAME") or os.environ.get("KAFKA_SASL_USERNAME")
+    sasl_pass = os.environ.get("UPSTASH_KAFKA_REST_PASSWORD") or os.environ.get("KAFKA_SASL_PASSWORD")
+
     producer = KafkaProducer(
         bootstrap_servers=bootstrap_servers,
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+        security_protocol='SASL_SSL' if sasl_user else 'PLAINTEXT',
+        sasl_mechanism='SCRAM-SHA-256' if sasl_user else None,
+        sasl_plain_username=sasl_user,
+        sasl_plain_password=sasl_pass
     )
     
     print(f"Starting replay of {len(df_interactions)} events at {speed_multiplier}x speed...")
