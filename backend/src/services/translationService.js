@@ -7,7 +7,7 @@ let model;
 
 if (apiKey) {
   genAI = new GoogleGenerativeAI(apiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 } else {
   console.warn("GEMINI_API_KEY is not set. Translation will be mocked or fail.");
 }
