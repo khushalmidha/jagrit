@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || ${API_URL};
+
 const NewsCard = ({ article, isHero = false, token }) => {
   const [showScore, setShowScore] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -21,7 +23,7 @@ const NewsCard = ({ article, isHero = false, token }) => {
     e.preventDefault();
     if (!token) return alert('Please login to save articles');
     try {
-      await axios.post(`http://localhost:5000/api/feed/save/${article.news_id}`, {}, {
+      await axios.post(`/api/feed/save/${article.news_id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSaved(true);

@@ -2,6 +2,8 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthContext } from './AuthContext';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || ${API_URL};
+
 export const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
@@ -10,7 +12,7 @@ export const LanguageProvider = ({ children }) => {
 
   useEffect(() => {
     if (user && token) {
-      axios.get('http://localhost:5000/api/preferences', {
+      axios.get(${API_URL}, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(res => {
         if (res.data.language) setLang(res.data.language);
@@ -24,7 +26,7 @@ export const LanguageProvider = ({ children }) => {
     
     if (user && token) {
       try {
-        await axios.patch('http://localhost:5000/api/preferences', { language: newLang }, {
+        await axios.patch(${API_URL}, { language: newLang }, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } catch (error) {

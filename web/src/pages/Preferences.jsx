@@ -3,6 +3,8 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = import.meta.env.VITE_API_URL || ${API_URL};
+
 const Preferences = () => {
   const { token, user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -15,7 +17,7 @@ const Preferences = () => {
   useEffect(() => {
     if (!token) return navigate('/login');
     
-    axios.get('http://localhost:5000/api/preferences', {
+    axios.get(${API_URL}, {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => {
       setCategories(res.data.preferred_categories || []);
@@ -31,7 +33,7 @@ const Preferences = () => {
 
   const handleSave = async () => {
     try {
-      await axios.patch('http://localhost:5000/api/preferences', {
+      await axios.patch(${API_URL}, {
         preferred_categories: categories,
         language
       }, {
