@@ -12,14 +12,29 @@ class RankerService:
         
         # Load Model
         model_path = os.path.join(base_dir, "models", "ranker.pkl")
-        with open(model_path, "rb") as f:
-            self.model = pickle.load(f)
+        try:
+            with open(model_path, "rb") as f:
+                self.model = pickle.load(f)
+        except FileNotFoundError:
+            print("WARNING: Model ranker.pkl not found. Running in fallback mode.")
+            self.model = None
             
-        self.model_version = "v1-xgboost"
+        self.model_version = "v1-xgboost" if self.model else "v0-fallback"
             
         # Load Static Data for Candidate Gen & Features
         news_path = os.path.join(base_dir, "data", "processed", "news.parquet")
-        self.df_news = pd.read_parquet(news_path)
+        try:
+            self.df_news = pd.read_parquet(news_path)
+        except (FileNotFoundError, OSError):
+            print("WARNING: news.parquet not found. Using mock news data.")
+            self.df_news = pd.DataFrame([
+                {"news_id": "M1", "category": "business", "title": "Global Markets Rally as Tech Stocks Surge", "abstract": ""},
+                {"news_id": "M2", "category": "technology", "title": "New Breakthrough in Renewable Energy Tech", "abstract": ""},
+                {"news_id": "M3", "category": "sports", "title": "World Cup Finals: An Unforgettable Match", "abstract": ""},
+                {"news_id": "M4", "category": "politics", "title": "Elections 2026: What You Need to Know", "abstract": ""},
+                {"news_id": "M5", "category": "technology", "title": "The Future of AI in Healthcare", "abstract": ""}
+            ])
+            
         self.news_dict = self.df_news.set_index('news_id').to_dict('index')
         
         # Initialize Feature Engineer and Candidate Generator
@@ -27,7 +42,12 @@ class RankerService:
         
         # Static interactions for history fallback if Redis missing
         interactions_path = os.path.join(base_dir, "data", "processed", "interactions.parquet")
-        self.df_interactions = pd.read_parquet(interactions_path)
+        try:
+            self.df_interactions = pd.read_parquet(interactions_path)
+        except (FileNotFoundError, OSError):
+            print("WARNING: interactions.parquet not found. Using empty interactions.")
+            self.df_interactions = pd.DataFrame(columns=["user_id", "history", "timestamp", "clicked", "news_id"])
+            
         self.cg = CandidateGenerator(self.df_news, self.df_interactions)
         
         # Redis Client
@@ -112,6 +132,12 @@ class RankerService:
         ]
         
         # 4. Rank
+        if self.model is None:
+            # Fallback if no model exists (e.g. data missing)
+            recs = self._cold_start_recommendation(top_k)
+            latency = (time.time() - start_time) * 1000
+            return recs, latency, True
+            
         preds = self.model.predict_proba(df_feats[feature_cols])[:, 1]
         df_feats['score'] = preds
         
