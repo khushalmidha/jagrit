@@ -79,22 +79,47 @@ const ForYou = () => {
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Newspaper style header for the section */}
-      <div className="mb-10 flex flex-col items-center border-b-[6px] border-black pb-6">
+      <div className="mb-10 flex flex-col items-center border-b-[6px] border-black pb-6 relative">
         <h1 className="text-6xl font-serif font-black text-gray-900 tracking-tight uppercase">{t('For You')}</h1>
         <p className="mt-3 text-gray-500 font-serif italic text-lg border-t border-b border-gray-300 py-1 px-4">
           {t('Personalized Edition • Powered by Jagrit AI')}
         </p>
+        
+        {/* Admin Utility Button for Live News */}
+        <button 
+          onClick={async (e) => {
+            const btn = e.target;
+            btn.innerText = 'Fetching...';
+            try {
+              await axios.post(`${API_URL}/api/admin/ingest-news`);
+              alert('Live news fetched successfully! Refreshing page...');
+              window.location.reload();
+            } catch (err) {
+              alert('Failed to fetch news. Is the backend running?');
+              btn.innerText = 'Fetch Latest Live News';
+            }
+          }}
+          className="absolute right-0 top-0 bg-red-600 text-white px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition shadow-sm"
+        >
+          Fetch Latest Live News
+        </button>
       </div>
 
       {isColdStart && (
         <div className="bg-white border border-black p-4 mb-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between">
           <div>
             <span className="font-bold uppercase tracking-wider text-sm mr-2 text-red-600">Notice:</span>
-            <span className="text-gray-800 font-serif">You are currently viewing trending stories. Log in or update preferences for ML personalization.</span>
+            <span className="text-gray-800 font-serif">
+              {token 
+                ? 'You are viewing trending stories. Read more articles to build your ML personalization profile.' 
+                : 'You are currently viewing trending stories. Log in or update preferences for ML personalization.'}
+            </span>
           </div>
-          <Link to="/login" className="bg-black text-white px-4 py-1 text-xs font-bold uppercase hover:bg-gray-800 transition">
-            {t('Login')}
-          </Link>
+          {!token && (
+            <Link to="/login" className="bg-black text-white px-4 py-1 text-xs font-bold uppercase hover:bg-gray-800 transition">
+              {t('Login')}
+            </Link>
+          )}
         </div>
       )}
 
