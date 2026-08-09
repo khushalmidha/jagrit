@@ -92,10 +92,9 @@ const ForYou = () => {
             btn.innerText = 'Fetching...';
             try {
               await axios.post(`${API_URL}/api/admin/ingest-news`);
-              alert('Live news fetched successfully! Refreshing page...');
               window.location.reload();
             } catch (err) {
-              alert('Failed to fetch news. Is the backend running?');
+              console.error('Failed to fetch news', err);
               btn.innerText = 'Fetch Latest Live News';
             }
           }}
