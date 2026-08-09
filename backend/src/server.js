@@ -32,8 +32,11 @@ const start = async () => {
       console.log(`Backend server listening on port ${PORT}`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('\n\n!!! FAILED TO START SERVER !!!');
+    console.error(error);
+    console.error('!!! ------------------------ !!!\n\n');
+    // Do not process.exit(1) immediately, wait 2 seconds so Render flushes logs
+    setTimeout(() => process.exit(1), 2000);
   }
 };
 
