@@ -122,11 +122,7 @@ const ForYou = () => {
         </div>
       )}
 
-      {feed.length === 0 && (
-        <div className="bg-yellow-50 border border-yellow-400 text-yellow-800 p-4 mb-10 text-center font-bold uppercase tracking-wider text-xs">
-          ⚠️ Backend ML Service Unreachable — Displaying Unverified Mock Data
-        </div>
-      )}
+      {/* Removed the ML Service unreachable banner as per user request */}
 
       {/* Editorial Grid Layout */}
       <div className="flex flex-col lg:flex-row gap-8">
