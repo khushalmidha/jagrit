@@ -1,0 +1,15 @@
+pandas
+numpy
+scikit-learn
+xgboost
+mlflow
+pyarrow
+matplotlib
+fastapi
+uvicorn
+kafka-python
+redis
+kagglehub
+scipy
+pytest
+requests

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking Engine Monitoring</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f7fa; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #2c3e50; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; color: #3498db; margin: 10px 0; }
+        .stat-label { font-size: 0.9rem; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Real-Time Ranking API Metrics</h1>
+            <div style="color: #7f8c8d; font-size: 0.9rem;">Auto-refreshing every 2s</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Requests</div>
+                <div class="stat-value" id="val-reqs">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg Latency (ms)</div>
+                <div class="stat-value" id="val-lat">0.0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Cold Start %</div>
+                <div class="stat-value" id="val-cold">0%</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <canvas id="reqChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <canvas id="latChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctxReq = document.getElementById('reqChart').getContext('2d');
+        const ctxLat = document.getElementById('latChart').getContext('2d');
+
+        const reqChart = new Chart(ctxReq, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Total Requests', data: [], borderColor: '#3498db', tension: 0.4 }] },
+            options: { responsive: true, animation: false, scales: { y: { beginAtZero: true } } }
+        });
+
+        const latChart = new Chart(ctxLat, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Avg Latency (ms)', data: [], borderColor: '#e74c3c', tension: 0.4 }] },
+            options: { responsive: true, animation: false, scales: { y: { beginAtZero: true } } }
+        });
+
+        async function fetchMetrics() {
+            try {
+                // Ensure CORS is allowed in FastAPI or serve from same host
+                const res = await fetch('http://localhost:8000/metrics');
+                const data = await res.json();
+                
+                document.getElementById('val-reqs').innerText = data.total_requests;
+                document.getElementById('val-lat').innerText = data.avg_latency_ms;
+                document.getElementById('val-cold').innerText = data.cold_start_percentage + '%';
+
+                const now = new Date().toLocaleTimeString();
+
+                reqChart.data.labels.push(now);
+                reqChart.data.datasets[0].data.push(data.total_requests);
+                
+                latChart.data.labels.push(now);
+                latChart.data.datasets[0].data.push(data.avg_latency_ms);
+
+                if (reqChart.data.labels.length > 20) {
+                    reqChart.data.labels.shift();
+                    reqChart.data.datasets[0].data.shift();
+                    latChart.data.labels.shift();
+                    latChart.data.datasets[0].data.shift();
+                }
+
+                reqChart.update();
+                latChart.update();
+            } catch (e) {
+                console.error("Error fetching metrics", e);
+            }
+        }
+
+        setInterval(fetchMetrics, 2000);
+    </script>
+</body>
+</html>

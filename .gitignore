@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+
+# Data and Models
+data/raw/
+data/processed/
+models/*.pkl
+mlruns/
+experiments/*.md
+!experiments/replay_evaluator.py
+!experiments/stats.py
+!experiments/run_experiment.py
