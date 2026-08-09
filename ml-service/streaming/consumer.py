@@ -21,7 +21,11 @@ def consume_and_update(bootstrap_servers, redis_host, redis_port):
         sasl_plain_password=sasl_pass
     )
     
-    r = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
+    redis_url = os.environ.get("REDIS_URL")
+    if redis_url:
+        r = redis.from_url(redis_url, decode_responses=True)
+    else:
+        r = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
     
     print("Listening for events to update Redis features...")
     
