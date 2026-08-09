@@ -31,51 +31,80 @@ const ForYou = () => {
     .finally(() => setLoading(false));
   }, [token, lang]);
 
-  if (!user) {
+  if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-        <h2 className="text-3xl font-serif mb-4">Personalized News Awaits</h2>
-        <p className="text-gray-600 mb-8">Please login to see your ML-ranked feed based on the MIND dataset.</p>
-        <Link to="/login" className="bg-black text-white px-6 py-2 font-bold uppercase tracking-wide text-sm">
-          {t('Login')}
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <FeedSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8 border-b-4 border-black inline-block">
-        <h1 className="text-4xl font-serif font-bold text-gray-900 pb-1">{t('For You')}</h1>
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Newspaper style header for the section */}
+      <div className="mb-10 flex flex-col items-center border-b-[6px] border-black pb-6">
+        <h1 className="text-6xl font-serif font-black text-gray-900 tracking-tight uppercase">{t('For You')}</h1>
+        <p className="mt-3 text-gray-500 font-serif italic text-lg border-t border-b border-gray-300 py-1 px-4">
+          Personalized Edition • Powered by Jagrit AI
+        </p>
       </div>
 
-      {isColdStart && !loading && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                Welcome to Jagrit! It looks like you're new here. We are showing you top trending stories. 
-                <Link to="/preferences" className="font-bold underline ml-1">Tell us what you like</Link> to get better recommendations.
-              </p>
-            </div>
+      {isColdStart && (
+        <div className="bg-white border border-black p-4 mb-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between">
+          <div>
+            <span className="font-bold uppercase tracking-wider text-sm mr-2 text-red-600">Notice:</span>
+            <span className="text-gray-800 font-serif">You are currently viewing trending stories. Log in or update preferences for ML personalization.</span>
           </div>
+          <Link to="/login" className="bg-black text-white px-4 py-1 text-xs font-bold uppercase hover:bg-gray-800 transition">
+            {t('Login')}
+          </Link>
         </div>
       )}
 
-      {loading ? (
-        <FeedSkeleton />
-      ) : (
-        <div className="magazine-grid">
-          {feed.map((article, index) => (
-            <NewsCard 
-              key={article.news_id} 
-              article={article} 
-              isHero={index === 0} 
-              token={token}
-            />
-          ))}
+      {/* Editorial Grid Layout */}
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Main Content Area */}
+        <div className="lg:w-3/4">
+          {feed.length > 0 && (
+            <div className="mb-10">
+              <NewsCard article={feed[0]} isHero={true} token={token} />
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12 border-t border-gray-200 pt-8">
+            {feed.slice(1).map((article) => (
+              <NewsCard 
+                key={article.news_id} 
+                article={article} 
+                isHero={false} 
+                token={token}
+              />
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* Sidebar */}
+        <div className="lg:w-1/4 space-y-8">
+          <div className="bg-gray-50 p-6 border-t-4 border-black">
+            <h3 className="font-serif font-black text-xl mb-4 uppercase">Top Topics</h3>
+            <ul className="space-y-3 font-serif">
+              {['Politics', 'World', 'Business', 'Technology', 'Sports'].map(topic => (
+                <li key={topic} className="flex justify-between items-center border-b border-gray-200 pb-2">
+                  <a href="#" className="hover:text-red-600 transition">{topic}</a>
+                  <span className="text-gray-400 text-xs">»</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="border border-gray-200 p-6 text-center">
+            <h3 className="font-serif font-bold text-lg mb-2">Jagrit Newsletter</h3>
+            <p className="text-gray-500 text-sm mb-4">Get the top stories delivered to your inbox daily.</p>
+            <input type="email" placeholder="Your Email" className="w-full border border-gray-300 px-3 py-2 text-sm mb-3 focus:outline-none focus:border-black" />
+            <button className="w-full bg-black text-white py-2 text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition">Subscribe</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

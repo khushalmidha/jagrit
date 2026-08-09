@@ -31,46 +31,45 @@ const NewsCard = ({ article, isHero = false, token }) => {
   };
 
   return (
-    <div className={`flex flex-col bg-white overflow-hidden rounded-md border border-gray-100 hover:shadow-lg transition-shadow duration-300 ${isHero ? 'hero-card md:flex-row' : ''}`}>
-      <div className={`relative ${isHero ? 'md:w-2/3 h-64 md:h-auto' : 'h-48'}`}>
-        <img src={getImageUrl(article.news_id)} alt={article.title} className="w-full h-full object-cover" />
-        <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
-          {article.category}
-        </div>
+    <div className={`flex flex-col bg-white overflow-hidden ${isHero ? 'md:flex-row border-b-[4px] border-black pb-8' : 'border-b border-gray-300 pb-6'}`}>
+      <div className={`relative ${isHero ? 'md:w-[60%] h-[400px]' : 'h-56 mb-4'}`}>
+        <img src={getImageUrl(article.news_id)} alt={article.title} className="w-full h-full object-cover border border-gray-200" />
       </div>
       
-      <div className={`p-5 flex flex-col justify-between flex-grow ${isHero ? 'md:w-1/3' : ''}`}>
+      <div className={`flex flex-col justify-between ${isHero ? 'md:w-[40%] md:pl-8 py-2' : ''}`}>
         <div>
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-bold text-red-600 uppercase tracking-wider">MIND News</span>
-            <button onClick={handleSave} className="text-gray-400 hover:text-black">
-              {saved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest border-b-2 border-red-600 pb-1">
+              {article.category}
+            </span>
+            <button onClick={handleSave} className="text-gray-400 hover:text-black transition-colors">
+              {saved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
             </button>
           </div>
           
-          <h2 className={`font-serif font-bold leading-tight mb-3 text-gray-900 ${isHero ? 'text-3xl' : 'text-xl'}`}>
+          <h2 className={`font-serif font-bold text-gray-900 leading-[1.1] mb-4 hover:text-red-700 cursor-pointer transition-colors ${isHero ? 'text-4xl md:text-5xl' : 'text-2xl'}`}>
             {article.title}
           </h2>
           
-          <p className="text-gray-600 text-sm line-clamp-3 font-sans">
-            {article.abstract || 'Read the full story to know more about this breaking development.'}
+          <p className={`text-gray-600 font-serif leading-relaxed ${isHero ? 'text-lg line-clamp-4' : 'text-sm line-clamp-3'}`}>
+            {article.abstract || 'Read the full story to know more about this breaking development and its implications on the global landscape.'}
           </p>
         </div>
         
-        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
-          <span>By Jagrit Editorial</span>
+        <div className="mt-6 pt-3 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 uppercase tracking-wider font-bold">
+          <span>By Jagrit Desk</span>
           
           <div className="flex items-center space-x-2">
             <button 
               onClick={() => setShowScore(!showScore)}
-              className="text-blue-500 hover:underline text-[10px]"
+              className="text-gray-400 hover:text-black border border-gray-200 px-2 py-1 transition"
               title="Toggle Dev Mode (Show Rank Score)"
             >
               [DEV]
             </button>
             {showScore && (
-              <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded font-mono">
-                Rank #{article.rank} ({article.score.toFixed(3)})
+              <span className="bg-black text-white px-2 py-1 font-mono normal-case">
+                #{article.rank} ({article.score.toFixed(3)})
               </span>
             )}
           </div>

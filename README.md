@@ -39,3 +39,32 @@ Ensure you have Docker Desktop installed, then run the demo script:
 - Trained an XGBoost ranking model achieving ~0.58 AUC and ~0.26 MRR, explicitly evaluating tradeoffs against deep learning baselines (DeepFM, NRMS).
 - Integrated Google Gemini API for English-to-Hindi translations with an optimized MongoDB caching layer, reducing external API costs and improving feed load times.
 - Implemented the Replay Method (Li et al. 2011) to conduct unbiased offline A/B testing on logged observational data, proving a statistically significant CTR lift (p < 0.05) over logistic regression baselines.
+
+## Production Deployment Guide
+
+Since Jagrit utilizes a microservices architecture, you can deploy the frontend and backend on serverless platforms (like Vercel and Render), while the ML service needs a dedicated environment.
+
+### 1. ML Service (Python FastAPI, Kafka, Redis)
+Because the ML service requires Kafka and Redis for the real-time feature store, the easiest way to deploy it is via a single Virtual Machine (VM) using Docker Compose.
+- **Provider**: AWS EC2, DigitalOcean Droplet, or Linode. A machine with at least 4GB RAM is recommended.
+- **Steps**:
+  1. SSH into your VM.
+  2. Clone the repository: `git clone https://github.com/khushalmidha/jagrit.git`
+  3. Navigate to the `ml-service` directory: `cd jagrit/ml-service`
+  4. Run the Docker Compose stack: `docker-compose -f docker-compose.yml -f docker-compose.kafka.yml up -d`
+  5. Your ML API will now be live on `http://<YOUR_VM_IP>:8000`.
+
+### 2. Product Backend (Node.js)
+- **Provider**: Render (Web Service)
+- **Settings**:
+  - Root Directory: `backend`
+  - Build Command: `npm install`
+  - Start Command: `npm start`
+  - Env Vars: `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, and `ML_SERVICE_URL` (Set this to `http://<YOUR_VM_IP>:8000`).
+
+### 3. Web Frontend (React)
+- **Provider**: Vercel
+- **Settings**: 
+  - Root Directory: `web`
+  - Framework Preset: Vite
+  - *Note: Remember to update the hardcoded `localhost:5000` URLs in the React codebase to your new Render backend URL before pushing to Vercel.*
