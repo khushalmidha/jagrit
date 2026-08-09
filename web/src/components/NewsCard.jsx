@@ -5,19 +5,18 @@ import { LanguageContext } from '../context/LanguageContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// A curated list of reliable, high-quality Unsplash image IDs for news
-const UNSPLASH_IDS = [
-  '1504711434969-e33886168f5c', // news desk
-  '1495020625982-f3bdcdb50552', // technology
-  '1526304640581-d334cdbbf45e', // money/business
-  '1585829365295-ab7cd400c167', // breaking news newspaper
-  '1523995462485-3d171b5c8fa9', // city traffic/world
-  '1432821596592-e2c18b78144f', // office building
-  '1551288049-bebda4e38f71', // data/tech
-  '1504465039710-0f56111f1585', // stock market
-  '1486406146926-c627a92ad1ab', // corporate building
-  '1507679622140-6152662c5b36'  // global map
-];
+// Fixed category-based reliable images as requested
+const CATEGORY_IMAGES = {
+  technology: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&h=600&auto=format&fit=crop',
+  sports: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=800&h=600&auto=format&fit=crop',
+  finance: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=800&h=600&auto=format&fit=crop',
+  business: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&h=600&auto=format&fit=crop',
+  politics: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?q=80&w=800&h=600&auto=format&fit=crop',
+  education: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=800&h=600&auto=format&fit=crop',
+  world: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?q=80&w=800&h=600&auto=format&fit=crop',
+  entertainment: 'https://images.unsplash.com/photo-1603190287605-e6ade32fa852?q=80&w=800&h=600&auto=format&fit=crop',
+  default: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=800&h=600&auto=format&fit=crop'
+};
 
 const NewsCard = ({ article, isHero = false, token }) => {
   const [showScore, setShowScore] = useState(false);
@@ -25,15 +24,10 @@ const NewsCard = ({ article, isHero = false, token }) => {
   const [expanded, setExpanded] = useState(false);
   const { lang } = useContext(LanguageContext);
 
-  // Generate a consistent pseudo-random image from the curated list based on news_id
-  const getImageUrl = (id) => {
-    let hash = 0;
-    const str = String(id);
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % UNSPLASH_IDS.length;
-    return `https://images.unsplash.com/photo-${UNSPLASH_IDS[index]}?q=80&w=800&h=600&auto=format&fit=crop`;
+  // Return fixed image based on category
+  const getImageUrl = (category) => {
+    const cat = String(category || '').toLowerCase();
+    return CATEGORY_IMAGES[cat] || CATEGORY_IMAGES.default;
   };
 
   const handleSave = async (e) => {
@@ -55,7 +49,7 @@ const NewsCard = ({ article, isHero = false, token }) => {
   return (
     <div className={`flex flex-col bg-white overflow-hidden ${isHero ? 'md:flex-row border-b-[4px] border-black pb-8' : 'border-b border-gray-300 pb-6'}`}>
       <div className={`relative ${isHero ? 'md:w-[60%] h-[400px]' : 'h-56 mb-4'}`}>
-        <img src={getImageUrl(article.news_id)} alt={displayTitle} className="w-full h-full object-cover border border-gray-200" />
+        <img src={getImageUrl(article.category)} alt={displayTitle} className="w-full h-full object-cover border border-gray-200" />
       </div>
       
       <div className={`flex flex-col justify-between ${isHero ? 'md:w-[40%] md:pl-8 py-2' : ''}`}>
