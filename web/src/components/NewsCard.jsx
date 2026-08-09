@@ -1,24 +1,39 @@
 import React, { useState, useContext } from 'react';
-import { Bookmark, BookmarkCheck } from 'lucide-react';
+import { Bookmark, BookmarkCheck, ChevronDown, ChevronUp } from 'lucide-react';
 import axios from 'axios';
 import { LanguageContext } from '../context/LanguageContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// A curated list of reliable, high-quality Unsplash image IDs for news
+const UNSPLASH_IDS = [
+  '1504711434969-e33886168f5c', // news desk
+  '1495020625982-f3bdcdb50552', // technology
+  '1526304640581-d334cdbbf45e', // money/business
+  '1585829365295-ab7cd400c167', // breaking news newspaper
+  '1523995462485-3d171b5c8fa9', // city traffic/world
+  '1432821596592-e2c18b78144f', // office building
+  '1551288049-bebda4e38f71', // data/tech
+  '1504465039710-0f56111f1585', // stock market
+  '1486406146926-c627a92ad1ab', // corporate building
+  '1507679622140-6152662c5b36'  // global map
+];
+
 const NewsCard = ({ article, isHero = false, token }) => {
   const [showScore, setShowScore] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const { lang } = useContext(LanguageContext);
 
-  // Generate a consistent pseudo-random image from picsum based on news_id
-  // MIND dataset doesn't have images.
+  // Generate a consistent pseudo-random image from the curated list based on news_id
   const getImageUrl = (id) => {
     let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-      hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    const str = String(id);
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const seed = Math.abs(hash) % 1000;
-    return `https://picsum.photos/seed/${seed}/800/600`;
+    const index = Math.abs(hash) % UNSPLASH_IDS.length;
+    return `https://images.unsplash.com/photo-${UNSPLASH_IDS[index]}?q=80&w=800&h=600&auto=format&fit=crop`;
   };
 
   const handleSave = async (e) => {
@@ -47,7 +62,7 @@ const NewsCard = ({ article, isHero = false, token }) => {
         <div>
           <div className="flex justify-between items-center mb-3">
             <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest border-b-2 border-red-600 pb-1">
-              {article.category}
+              {article.category || 'News'}
             </span>
             <button onClick={handleSave} className="text-gray-400 hover:text-black transition-colors">
               {saved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
@@ -58,9 +73,20 @@ const NewsCard = ({ article, isHero = false, token }) => {
             {displayTitle}
           </h2>
           
-          <p className={`text-gray-600 font-serif leading-relaxed ${isHero ? 'text-lg line-clamp-4' : 'text-sm line-clamp-3'}`}>
-            {displayAbstract}
-          </p>
+          <div className="text-gray-600 font-serif leading-relaxed">
+            <p className={`${expanded ? '' : (isHero ? 'line-clamp-4' : 'line-clamp-3')} text-sm md:text-base`}>
+              {displayAbstract}
+            </p>
+            {displayAbstract.length > 100 && (
+              <button 
+                onClick={() => setExpanded(!expanded)} 
+                className="mt-2 text-xs font-bold uppercase tracking-wider text-black hover:text-red-600 flex items-center transition"
+              >
+                {expanded ? 'Show Less' : 'Read More'}
+                {expanded ? <ChevronUp size={14} className="ml-1" /> : <ChevronDown size={14} className="ml-1" />}
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="mt-6 pt-3 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 uppercase tracking-wider font-bold">
