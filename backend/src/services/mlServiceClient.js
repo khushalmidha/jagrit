@@ -11,6 +11,10 @@ const redis = process.env.REDIS_URL
   ? new Redis(process.env.REDIS_URL, redisOptions) 
   : new Redis({ host: 'localhost', port: 6379 });
 
+redis.on('error', (err) => {
+  console.error('Redis error in mlServiceClient:', err.message);
+});
+
 const getRecommendations = async (mindUserId, topK = 15) => {
   try {
     const response = await axios.post(`${ML_SERVICE_URL}/recommend`, {
