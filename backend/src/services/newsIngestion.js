@@ -51,29 +51,37 @@ const ingestLiveNews = async () => {
     
     // 1. Fetch from NewsAPI (if key exists)
     if (NEWS_API_KEY) {
+      console.log("Using NewsAPI key to fetch diverse categories...");
+      const categoriesToFetch = ['general', 'technology', 'sports', 'business', 'entertainment'];
       try {
-        const response = await axios.get(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${NEWS_API_KEY}`);
-        if (response.data && response.data.articles) {
-          const newsApiArticles = response.data.articles.filter(a => a.title && a.description).map(a => {
-            let category = 'news';
-            if (a.url.includes('tech') || a.url.includes('verge')) category = 'technology';
-            else if (a.url.includes('sport') || a.url.includes('espn')) category = 'sports';
-            else if (a.url.includes('finance') || a.url.includes('bloomberg')) category = 'finance';
-
-            return {
-              title: a.title,
-              abstract: a.description,
-              category: category,
-              url: a.url,
-              source: a.source.name,
-              image_url: a.urlToImage || ""
-            };
-          });
-          allArticles = [...allArticles, ...newsApiArticles];
-          console.log(`Fetched ${newsApiArticles.length} articles from NewsAPI`);
-        }
+        const newsApiPromises = categoriesToFetch.map(cat => 
+          axios.get(`https://newsapi.org/v2/top-headlines?country=in&category=${cat}&apiKey=${NEWS_API_KEY}`)
+            .then(res => {
+              if (!res.data || !res.data.articles) return [];
+              return res.data.articles
+                .filter(a => a.title && a.description)
+                .map(a => ({
+                  title: a.title,
+                  abstract: a.description,
+                  category: cat === 'general' ? 'news' : cat,
+                  url: a.url,
+                  source: a.source.name,
+                  image_url: a.urlToImage || ""
+                }));
+            })
+            .catch(err => {
+              console.error(`NewsAPI fetch failed for ${cat}:`, err.message);
+              return [];
+            })
+        );
+        
+        const results = await Promise.all(newsApiPromises);
+        results.forEach(articles => {
+          allArticles = [...allArticles, ...articles];
+        });
+        console.log(`Fetched articles from NewsAPI across ${categoriesToFetch.length} categories.`);
       } catch (e) {
-        console.error("NewsAPI fetch failed:", e.message);
+        console.error("NewsAPI overall fetch failed:", e.message);
       }
     }
 
