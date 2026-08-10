@@ -6,8 +6,6 @@ import pickle
 import xgboost as xgb
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
-from scipy.stats import rankdata
-
 def dcg_score(y_true, y_score, k=10):
     order = np.argsort(y_score)[::-1]
     y_true = np.take(y_true, order[:k])
@@ -106,7 +104,6 @@ def train_models():
         mlflow.xgboost.log_model(xgb_model, "model")
         
         # Save feature importance
-        import matplotlib.pyplot.subplots
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(10, 6))
         xgb.plot_importance(xgb_model, ax=ax)

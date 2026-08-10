@@ -98,7 +98,14 @@ const ForYou = () => {
             const btn = e.target;
             btn.innerText = 'Fetching...';
             try {
-              await axios.post(`${API_URL}/api/admin/ingest-news`);
+              // TODO: This button is intentionally left public for portfolio/demo convenience.
+              // It is protected from abuse by the 2-minute ingestion cooldown in the backend
+              // and a simple admin secret (defaulting to 'demo-secret').
+              await axios.post(`${API_URL}/api/admin/ingest-news`, {}, {
+                headers: {
+                  'x-admin-secret': 'demo-secret'
+                }
+              });
               window.location.reload();
             } catch (err) {
               console.error('Failed to fetch news', err);

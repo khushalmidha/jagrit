@@ -101,7 +101,7 @@ const ingestLiveNews = async () => {
 
     if (allArticles.length === 0) {
       console.log("No articles found from any source.");
-      return;
+      return 0;
     }
 
     // Format and deduplicate
@@ -160,6 +160,7 @@ const ingestLiveNews = async () => {
     
   } catch (error) {
     console.error("Error during news ingestion:", error.message);
+    return 0;
   }
 };
 

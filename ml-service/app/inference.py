@@ -50,6 +50,13 @@ class RankerService:
             
         self.cg = CandidateGenerator(self.df_news, self.df_interactions)
         
+        # Precompute static CTR to avoid train/serve skew for non-live candidates
+        if not self.df_interactions.empty:
+            clicks_count = self.df_interactions.groupby('news_id')['clicked'].sum()
+            imps_count = self.df_interactions.groupby('news_id')['clicked'].count()
+            self.static_popularity = (clicks_count / imps_count).to_dict()
+        else:
+            self.static_popularity = {}        
         # Redis Client
         try:
             if redis_url:
@@ -168,7 +175,11 @@ class RankerService:
             candidates = self.cg.generate_candidates(user_history, num_candidates=50)
         
         # 3. Features
-        df_feats = self.fe.build_features(user_id, user_history, candidates, live_redis_client=redis_conn)
+        df_feats = self.fe.build_features(
+            user_id, user_history, candidates, 
+            live_redis_client=redis_conn,
+            static_popularity=self.static_popularity
+        )
         
         if df_feats.empty:
             # Fallback
@@ -201,6 +212,7 @@ class RankerService:
                 title = article['title']
                 category = article['category']
                 abstract = article.get('abstract', '')
+                image_url = article.get('image_url', '')
             elif use_live:
                 title = redis_conn.hget(f"article:{row.news_id}", "title") or "Live News"
                 category = redis_conn.hget(f"article:{row.news_id}", "category") or "news"

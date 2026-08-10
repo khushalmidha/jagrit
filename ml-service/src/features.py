@@ -15,7 +15,7 @@ class FeatureEngineer:
         probs = counts / len(history_cats)
         return entropy(probs)
         
-    def build_features(self, user_id, user_history_news_ids, candidate_news_ids, live_redis_client=None):
+    def build_features(self, user_id, user_history_news_ids, candidate_news_ids, live_redis_client=None, static_popularity=None):
         """
         Build features for a user and a list of candidates.
         live_redis_client is used in Phase 2 for live features.
@@ -58,7 +58,7 @@ class FeatureEngineer:
                 cat_match = history_cats.count(cat) / len(history_cats)
                 
             # article_popularity (CTR)
-            # In Phase 1 static, we'll mock this or assume it's precalculated.
+            # In Phase 1 static, we use precalculated CTR to avoid train/serve skew.
             # In Phase 2 live, we pull from Redis.
             article_popularity = 0.0
             if live_redis_client:
@@ -67,6 +67,8 @@ class FeatureEngineer:
                 imps = live_redis_client.hget(f"article:{news_id}", "impressions")
                 if clicks and imps and int(imps) > 0:
                     article_popularity = int(clicks) / int(imps)
+            elif static_popularity:
+                article_popularity = static_popularity.get(news_id, 0.0)
             
             # Recency (MIND news.tsv lacks timestamps, using 0 or mock)
             article_recency_hours = 24.0 

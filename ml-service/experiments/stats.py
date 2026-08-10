@@ -6,6 +6,9 @@ def two_proportion_z_test(clicks_A, matches_A, clicks_B, matches_B):
     """
     Performs a two-proportion z-test.
     """
+    if (matches_A + matches_B) == 0:
+        return {'ctr_A': 0, 'ctr_B': 0, 'lift': 0, 'z_stat': 0, 'p_value': 1.0, 'ci_lower': 0, 'ci_upper': 0}
+
     p_A = clicks_A / matches_A if matches_A > 0 else 0
     p_B = clicks_B / matches_B if matches_B > 0 else 0
     

@@ -8,7 +8,9 @@ class RecommendRequest(BaseModel):
 class RecommendedArticle(BaseModel):
     news_id: str
     title: str
+    abstract: str = ""
     category: str
+    image_url: str = ""
     score: float
     rank: int
 

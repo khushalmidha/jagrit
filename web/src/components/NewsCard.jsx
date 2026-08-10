@@ -5,6 +5,12 @@ import { LanguageContext } from '../context/LanguageContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+const NewsCard = ({ article, isHero = false, token }) => {
+  const [showScore, setShowScore] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const { lang } = useContext(LanguageContext);
+
   // Return local fixed image based on category
   const getImageUrl = (category, newsId) => {
     const cat = String(category || '').toLowerCase();
