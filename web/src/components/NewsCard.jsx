@@ -43,7 +43,16 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   return (
     <div className={`flex flex-col bg-white overflow-hidden ${isHero ? 'md:flex-row border-b-[4px] border-black pb-8' : 'border-b border-gray-300 pb-6'}`}>
       <div className={`relative ${isHero ? 'md:w-[60%] h-[400px]' : 'h-56 mb-4'}`}>
-        <img src={getImageUrl(article.category)} alt={displayTitle} className="w-full h-full object-cover border border-gray-200" />
+        <img 
+          src={article.image_url || getImageUrl(article.category, article.news_id)} 
+          onError={(e) => {
+            if (e.target.src !== getImageUrl(article.category, article.news_id)) {
+              e.target.src = getImageUrl(article.category, article.news_id);
+            }
+          }}
+          alt={displayTitle} 
+          className="w-full h-full object-cover border border-gray-200" 
+        />
       </div>
       
       <div className={`flex flex-col justify-between ${isHero ? 'md:w-[40%] md:pl-8 py-2' : ''}`}>

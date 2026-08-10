@@ -54,6 +54,7 @@ const _getFallbackArticles = async (topK) => {
           title: data.title || 'Live News',
           abstract: data.abstract || '',
           category: data.category || 'news',
+          image_url: data.image_url || '',
           score: 1.0 / (idx + 1),
           rank: idx + 1
         };

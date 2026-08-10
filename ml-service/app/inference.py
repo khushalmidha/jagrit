@@ -96,11 +96,13 @@ class RankerService:
                     title = self.redis_client.hget(f"article:{news_id}", "title") or "Live News"
                     category = self.redis_client.hget(f"article:{news_id}", "category") or "news"
                     abstract = self.redis_client.hget(f"article:{news_id}", "abstract") or ""
+                    image_url = self.redis_client.hget(f"article:{news_id}", "image_url") or ""
                     results.append({
                         "news_id": news_id,
                         "title": title,
                         "category": category,
                         "abstract": abstract,
+                        "image_url": image_url,
                         "score": 1.0 / rank,
                         "rank": rank
                     })
@@ -203,6 +205,7 @@ class RankerService:
                 title = redis_conn.hget(f"article:{row.news_id}", "title") or "Live News"
                 category = redis_conn.hget(f"article:{row.news_id}", "category") or "news"
                 abstract = redis_conn.hget(f"article:{row.news_id}", "abstract") or ""
+                image_url = redis_conn.hget(f"article:{row.news_id}", "image_url") or ""
             else:
                 continue
                 
@@ -211,6 +214,7 @@ class RankerService:
                 "title": title,
                 "abstract": abstract,
                 "category": category,
+                "image_url": image_url,
                 "score": float(row.score),
                 "rank": rank
             })

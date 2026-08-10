@@ -64,7 +64,8 @@ const ingestLiveNews = async () => {
         abstract: a.description,
         category: category,
         url: a.url,
-        source: a.source.name
+        source: a.source.name,
+        image_url: a.urlToImage || ""
       };
     });
 
@@ -83,6 +84,7 @@ const ingestLiveNews = async () => {
         category: article.category,
         url: article.url || "",
         source: article.source || "",
+        image_url: article.image_url || "",
         title_hi: article.title_hi || "",
         abstract_hi: article.abstract_hi || "",
         impressions: 0,
