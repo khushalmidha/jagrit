@@ -21,11 +21,13 @@ const parser = new Parser();
 
 // Reliable RSS Feeds for free, unlimited, long-description news
 const RSS_FEEDS = [
-  { url: 'http://feeds.bbci.co.uk/news/rss.xml', source: 'BBC News', category: 'world' },
-  { url: 'http://rss.cnn.com/rss/edition.rss', source: 'CNN', category: 'world' },
-  { url: 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en', source: 'Google News', category: 'news' },
+  { url: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms', source: 'Times of India', category: 'news' },
+  { url: 'https://www.thehindu.com/news/national/feeder/default.rss', source: 'The Hindu', category: 'politics' },
+  { url: 'https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en', source: 'Google News India', category: 'news' },
+  { url: 'http://feeds.bbci.co.uk/news/world/rss.xml', source: 'BBC World', category: 'world' },
   { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664', source: 'CNBC', category: 'finance' },
-  { url: 'https://feeds.a.dj.com/rss/RSSWSJD.xml', source: 'Wall Street Journal', category: 'technology' }
+  { url: 'https://feeds.a.dj.com/rss/RSSWSJD.xml', source: 'Wall Street Journal', category: 'technology' },
+  { url: 'https://www.espncricinfo.com/rss/content/story/feeds/0.xml', source: 'ESPN Cricinfo', category: 'sports' }
 ];
 
 /**

@@ -7,7 +7,7 @@ let model;
 
 if (apiKey) {
   genAI = new GoogleGenerativeAI(apiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 } else {
   console.warn("GEMINI_API_KEY is not set. Translation will be mocked or fail.");
 }
@@ -59,8 +59,8 @@ const translateArticle = async (article) => {
     
     return {
       ...article,
-      title: parsed.title_hi,
-      abstract: parsed.abstract_hi || article.abstract
+      title_hi: parsed.title_hi,
+      abstract_hi: parsed.abstract_hi
     };
     
   } catch (error) {
