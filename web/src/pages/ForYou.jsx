@@ -15,6 +15,8 @@ const ForYou = () => {
   const [loading, setLoading] = useState(true);
   const [isColdStart, setIsColdStart] = useState(false);
 
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
   useEffect(() => {
     if (!token) {
       setLoading(false);
@@ -75,6 +77,11 @@ const ForYou = () => {
     }
   ];
   const displayFeed = feed.length > 0 ? feed : mockFeed;
+  
+  // Filter feed by selected category
+  const filteredFeed = selectedCategory === 'All' 
+    ? displayFeed 
+    : displayFeed.filter(a => a.category?.toLowerCase() === selectedCategory.toLowerCase());
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -122,28 +129,32 @@ const ForYou = () => {
         </div>
       )}
 
-      {/* Removed the ML Service unreachable banner as per user request */}
-
       {/* Editorial Grid Layout */}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Main Content Area */}
         <div className="lg:w-3/4">
-          {displayFeed.length > 0 && (
-            <div className="mb-10">
-              <NewsCard article={displayFeed[0]} isHero={true} token={token} />
+          {filteredFeed.length > 0 ? (
+            <>
+              <div className="mb-10">
+                <NewsCard article={filteredFeed[0]} isHero={true} token={token} />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12 border-t border-gray-200 pt-8">
+                {filteredFeed.slice(1).map((article) => (
+                  <NewsCard 
+                    key={article.news_id} 
+                    article={article} 
+                    isHero={false} 
+                    token={token}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-20 text-gray-500 font-serif">
+              {t('No articles found in this category. Try another one.')}
             </div>
           )}
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12 border-t border-gray-200 pt-8">
-            {displayFeed.slice(1).map((article) => (
-              <NewsCard 
-                key={article.news_id} 
-                article={article} 
-                isHero={false} 
-                token={token}
-              />
-            ))}
-          </div>
         </div>
 
         {/* Sidebar */}
@@ -151,9 +162,18 @@ const ForYou = () => {
           <div className="bg-gray-50 p-6 border-t-4 border-black">
             <h3 className="font-serif font-black text-xl mb-4 uppercase">{t('TOP TOPICS')}</h3>
             <ul className="space-y-3 font-serif">
-              {['Politics', 'World', 'Business', 'Technology', 'Sports'].map(topic => (
+              {['All', 'Politics', 'World', 'Business', 'Technology', 'Sports', 'Entertainment', 'Finance'].map(topic => (
                 <li key={topic} className="flex justify-between items-center border-b border-gray-200 pb-2">
-                  <a href="#" className="hover:text-red-600 transition">{t(topic)}</a>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelectedCategory(topic);
+                    }}
+                    className={`transition ${selectedCategory === topic ? 'text-red-600 font-bold' : 'hover:text-red-600'}`}
+                  >
+                    {t(topic)}
+                  </a>
                   <span className="text-gray-400 text-xs">»</span>
                 </li>
               ))}
