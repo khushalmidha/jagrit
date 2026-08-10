@@ -55,7 +55,7 @@ const ingestLiveNews = async () => {
       const categoriesToFetch = ['general', 'technology', 'sports', 'business', 'entertainment'];
       try {
         const newsApiPromises = categoriesToFetch.map(cat => 
-          axios.get(`https://newsapi.org/v2/top-headlines?country=in&category=${cat}&apiKey=${NEWS_API_KEY}`)
+          axios.get(`https://newsapi.org/v2/top-headlines?language=en&category=${cat}&apiKey=${NEWS_API_KEY}`)
             .then(res => {
               if (!res.data || !res.data.articles) return [];
               return res.data.articles
