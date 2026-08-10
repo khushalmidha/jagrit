@@ -83,6 +83,10 @@ const ForYou = () => {
     ? displayFeed 
     : displayFeed.filter(a => a.category?.toLowerCase() === selectedCategory.toLowerCase());
 
+  const isAllCategory = selectedCategory === 'All';
+  const forYouFeed = isAllCategory ? filteredFeed.slice(0, 6) : [];
+  const globalFeed = isAllCategory ? filteredFeed.slice(6) : filteredFeed;
+
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Newspaper style header for the section */}
@@ -98,9 +102,6 @@ const ForYou = () => {
             const btn = e.target;
             btn.innerText = 'Fetching...';
             try {
-              // TODO: This button is intentionally left public for portfolio/demo convenience.
-              // It is protected from abuse by the 2-minute ingestion cooldown in the backend
-              // and a simple admin secret (defaulting to 'demo-secret').
               await axios.post(`${API_URL}/api/admin/ingest-news`, {}, {
                 headers: {
                   'x-admin-secret': 'demo-secret'
@@ -140,14 +141,13 @@ const ForYou = () => {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Main Content Area */}
         <div className="lg:w-3/4">
-          {filteredFeed.length > 0 ? (
-            <>
-              <div className="mb-10">
-                <NewsCard article={filteredFeed[0]} isHero={true} token={token} />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12 border-t border-gray-200 pt-8">
-                {filteredFeed.slice(1).map((article) => (
+          
+          {/* Top 6 For You Section */}
+          {isAllCategory && forYouFeed.length > 0 && (
+            <div className="mb-12">
+              <NewsCard article={forYouFeed[0]} isHero={true} token={token} />
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12 border-t border-gray-200 pt-8 mt-8">
+                {forYouFeed.slice(1).map((article) => (
                   <NewsCard 
                     key={article.news_id} 
                     article={article} 
@@ -156,12 +156,31 @@ const ForYou = () => {
                   />
                 ))}
               </div>
-            </>
-          ) : (
-            <div className="text-center py-20 text-gray-500 font-serif">
-              {t('No articles found in this category. Try another one.')}
             </div>
           )}
+
+          {/* Global News Section (Rest of the feed or filtered feed) */}
+          <div>
+            <h2 className="text-3xl font-serif font-black mb-6 uppercase border-b-2 border-black pb-2">
+              {isAllCategory ? t('Global News') : t(selectedCategory)}
+            </h2>
+            {globalFeed.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12">
+                {globalFeed.map((article) => (
+                  <NewsCard 
+                    key={article.news_id} 
+                    article={article} 
+                    isHero={false} 
+                    token={token}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 text-gray-500 font-serif">
+                {t('No articles found in this category. Try another one.')}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sidebar */}

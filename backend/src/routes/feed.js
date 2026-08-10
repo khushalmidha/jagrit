@@ -60,7 +60,24 @@ router.post('/save/:news_id', auth, async (req, res) => {
 router.get('/saved', auth, async (req, res) => {
   try {
     const saved = await SavedArticle.find({ userId: req.userId }).sort({ saved_at: -1 });
-    res.json(saved);
+    const newsIds = saved.map(s => s.news_id);
+    
+    let articles = await mlServiceClient.getArticleByIds(newsIds);
+    
+    const prefs = await Preference.findOne({ userId: req.userId });
+    const lang = req.query.lang || (prefs ? prefs.language : 'en');
+    
+    if (lang === 'hi') {
+      articles = await translationService.translateFeed(articles);
+    }
+    
+    // Attach saved_at date to each article
+    const response = articles.map((art, idx) => ({
+      ...art,
+      saved_at: saved[idx].saved_at
+    }));
+    
+    res.json(response);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

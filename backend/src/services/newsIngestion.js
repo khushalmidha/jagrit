@@ -128,6 +128,9 @@ const ingestLiveNews = async () => {
     // Push to Redis for the ML Candidate Generator
     const pipeline = redis.pipeline();
     
+    // Clear old recent news so only fresh news appears
+    pipeline.del('news:recent');
+    
     for (const article of translatedArticles) {
       // Store article details in a Hash
       pipeline.hset(`article:${article.news_id}`, {
@@ -143,18 +146,17 @@ const ingestLiveNews = async () => {
         clicks: 0,
         timestamp: Date.now()
       });
+      // Expire hash after 24 hours to prevent memory bloat
+      pipeline.expire(`article:${article.news_id}`, 86400);
       
       // Add to a sorted set of recent news (score is timestamp)
       pipeline.zadd('news:recent', Date.now(), article.news_id);
     }
     
-    // Keep only the latest 1000 articles in the recent set to prevent bloat
-    pipeline.zremrangebyrank('news:recent', 0, -1001);
-    
     await pipeline.exec();
     
-    // Set 2-minute cooldown (120 seconds)
-    await redis.set('last_news_fetch', Date.now(), 'EX', 120);
+    // Set 1-minute cooldown (60 seconds)
+    await redis.set('last_news_fetch', Date.now(), 'EX', 60);
     
     console.log("Live news successfully ingested into Redis!");
     

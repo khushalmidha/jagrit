@@ -6,6 +6,8 @@ import ForYou from './pages/ForYou';
 import Login from './pages/Login';
 import Preferences from './pages/Preferences';
 
+import SavedNews from './pages/SavedNews';
+
 function App() {
   return (
     <Router>
@@ -15,6 +17,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/foryou" element={<ForYou />} />
+            <Route path="/saved" element={<SavedNews />} />
             <Route path="/login" element={<Login />} />
             <Route path="/preferences" element={<Preferences />} />
           </Routes>

@@ -79,6 +79,40 @@ const _getFallbackArticles = async (topK) => {
   return fallbacks;
 };
 
+const getArticleByIds = async (newsIds) => {
+  if (!newsIds || newsIds.length === 0) return [];
+  try {
+    const pipeline = redis.pipeline();
+    newsIds.forEach(id => pipeline.hgetall(`article:${id}`));
+    const results = await pipeline.exec();
+    
+    return results.map((result, idx) => {
+      const data = result[1];
+      if (!data || !data.title) {
+        // Fallback for static MIND dataset articles not in Redis
+        return {
+          news_id: newsIds[idx],
+          title: `Archived Article`,
+          abstract: 'This article is no longer available in the live cache.',
+          category: 'news',
+          image_url: ''
+        };
+      }
+      return {
+        news_id: newsIds[idx],
+        title: data.title,
+        abstract: data.abstract || '',
+        category: data.category || 'news',
+        image_url: data.image_url || ''
+      };
+    });
+  } catch (err) {
+    console.error("Redis fetch error:", err.message);
+    return [];
+  }
+};
+
 module.exports = {
-  getRecommendations
+  getRecommendations,
+  getArticleByIds
 };

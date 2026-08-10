@@ -22,9 +22,14 @@ const Navbar = () => {
               <Link to="/" className="border-transparent text-gray-500 hover:text-black hover:border-black inline-flex items-center px-1 pt-1 border-b-4 text-sm font-bold uppercase tracking-wider transition-colors h-full">
                 {t('Top Stories')}
               </Link>
-              <Link to="/foryou" className="border-black text-black inline-flex items-center px-1 pt-1 border-b-4 text-sm font-bold uppercase tracking-wider h-full">
+              <Link to="/foryou" className="border-transparent text-gray-500 hover:text-black hover:border-black inline-flex items-center px-1 pt-1 border-b-4 text-sm font-bold uppercase tracking-wider transition-colors h-full">
                 {t('For You')}
               </Link>
+              {user && (
+                <Link to="/saved" className="border-transparent text-gray-500 hover:text-black hover:border-black inline-flex items-center px-1 pt-1 border-b-4 text-sm font-bold uppercase tracking-wider transition-colors h-full">
+                  {t('Saved News')}
+                </Link>
+              )}
             </div>
           </div>
           
