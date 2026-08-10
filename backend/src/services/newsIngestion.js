@@ -27,7 +27,7 @@ const ingestLiveNews = async () => {
   }
 
   try {
-    // Check cooldown to avoid hitting NewsAPI limits (10 minutes)
+    // Check cooldown to avoid hitting NewsAPI limits (2 minutes)
     const lastFetch = await redis.get('last_news_fetch');
     if (lastFetch) {
       console.log("News fetched recently. Skipping to avoid API limits.");
@@ -99,8 +99,8 @@ const ingestLiveNews = async () => {
     
     await pipeline.exec();
     
-    // Set 10-minute cooldown (600 seconds)
-    await redis.set('last_news_fetch', Date.now(), 'EX', 600);
+    // Set 2-minute cooldown (120 seconds)
+    await redis.set('last_news_fetch', Date.now(), 'EX', 120);
     
     console.log("Live news successfully ingested into Redis!");
     

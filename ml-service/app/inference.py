@@ -84,20 +84,59 @@ class RankerService:
         
     def _cold_start_recommendation(self, top_k):
         """
-        Return diversified trending + fresh + one-per-category articles.
+        Return trending + fresh live articles from Redis if available, otherwise fallback.
         """
-        popular = self.cg.popular_news[:top_k]
         results = []
-        for rank, news_id in enumerate(popular, 1):
+        
+        # Try getting live news first for cold start to ensure we have enough fresh articles
+        if self.is_redis_available():
+            try:
+                live_ids = self.redis_client.zrevrange('news:recent', 0, top_k - 1)
+                for rank, news_id in enumerate(live_ids, 1):
+                    title = self.redis_client.hget(f"article:{news_id}", "title") or "Live News"
+                    category = self.redis_client.hget(f"article:{news_id}", "category") or "news"
+                    abstract = self.redis_client.hget(f"article:{news_id}", "abstract") or ""
+                    results.append({
+                        "news_id": news_id,
+                        "title": title,
+                        "category": category,
+                        "abstract": abstract,
+                        "score": 1.0 / rank,
+                        "rank": rank
+                    })
+                if len(results) >= top_k:
+                    return results
+            except Exception as e:
+                print(f"Redis cold start error: {e}")
+
+        # Fallback to static popular news
+        popular = self.cg.popular_news[:top_k]
+        for rank, news_id in enumerate(popular, len(results) + 1):
+            if len(results) >= top_k:
+                break
             if news_id in self.news_dict:
                 article = self.news_dict[news_id]
                 results.append({
                     "news_id": news_id,
                     "title": article['title'],
                     "category": article['category'],
+                    "abstract": article.get('abstract', ''),
                     "score": 1.0 / rank, # Mock score
                     "rank": rank
                 })
+                
+        # Fill remaining slots with dynamic placeholders if we still don't have top_k
+        while len(results) < top_k:
+            rank = len(results) + 1
+            results.append({
+                "news_id": f"DYN{rank}",
+                "title": f"Breaking Global News {rank}",
+                "category": "world",
+                "abstract": "Stay tuned for more updates on this developing story.",
+                "score": 1.0 / rank,
+                "rank": rank
+            })
+            
         return results
 
     def recommend(self, user_id: str, top_k: int = 10):
