@@ -178,14 +178,6 @@ const ForYou = () => {
                 </li>
               ))}
             </ul>
-          </div>
-          
-          <div className="border border-gray-200 p-6 text-center">
-            <h3 className="font-serif font-bold text-lg mb-2">{t('Jagrit Newsletter')}</h3>
-            <p className="text-gray-500 text-sm mb-4">{t('Get the top stories delivered to your inbox daily.')}</p>
-            <input type="email" placeholder={t('Your Email')} className="w-full border border-gray-300 px-3 py-2 text-sm mb-3 focus:outline-none focus:border-black" />
-            <button className="w-full bg-black text-white py-2 text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition">{t('Subscribe')}</button>
-          </div>
         </div>
       </div>
     </div>
