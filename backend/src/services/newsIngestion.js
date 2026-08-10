@@ -17,7 +17,11 @@ redis.on('error', (err) => {
 });
 
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
-const parser = new Parser();
+const parser = new Parser({
+  customFields: {
+    item: ['media:content', 'media:thumbnail', 'enclosure']
+  }
+});
 
 // Reliable RSS Feeds for free, unlimited, long-description news
 const RSS_FEEDS = [
@@ -80,14 +84,29 @@ const ingestLiveNews = async () => {
         // Take top 10 from each feed to prevent overload
         const items = feed.items.slice(0, 10).filter(item => item.title && (item.contentSnippet || item.content));
         
-        return items.map(item => ({
-          title: item.title,
-          abstract: item.contentSnippet || item.content || item.summary || "",
-          category: feedInfo.category,
-          url: item.link,
-          source: feedInfo.source,
-          image_url: "" // RSS doesn't reliably provide images in standard fields
-        }));
+        return items.map(item => {
+          let imageUrl = "";
+          if (item.enclosure && item.enclosure.url) {
+            imageUrl = item.enclosure.url;
+          } else if (item['media:content'] && item['media:content']['$'] && item['media:content']['$'].url) {
+            imageUrl = item['media:content']['$'].url;
+          } else if (item['media:thumbnail'] && item['media:thumbnail']['$'] && item['media:thumbnail']['$'].url) {
+            imageUrl = item['media:thumbnail']['$'].url;
+          } else {
+            // Regex to find first image tag in content
+            const imgMatch = (item.content || '').match(/<img[^>]+src="([^">]+)"/);
+            if (imgMatch) imageUrl = imgMatch[1];
+          }
+
+          return {
+            title: item.title,
+            abstract: item.contentSnippet || item.content || item.summary || "",
+            category: feedInfo.category,
+            url: item.link,
+            source: feedInfo.source,
+            image_url: imageUrl
+          };
+        });
       } catch (e) {
         console.error(`RSS fetch failed for ${feedInfo.source}:`, e.message);
         return [];
