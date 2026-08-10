@@ -204,6 +204,7 @@ const ForYou = () => {
                 </li>
               ))}
             </ul>
+          </div>
         </div>
       </div>
     </div>
