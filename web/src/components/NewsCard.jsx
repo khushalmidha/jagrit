@@ -5,29 +5,23 @@ import { LanguageContext } from '../context/LanguageContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Fixed category-based reliable images as requested
-const CATEGORY_IMAGES = {
-  technology: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&h=600&auto=format&fit=crop',
-  sports: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=800&h=600&auto=format&fit=crop',
-  finance: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=800&h=600&auto=format&fit=crop',
-  business: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&h=600&auto=format&fit=crop',
-  politics: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?q=80&w=800&h=600&auto=format&fit=crop',
-  education: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=800&h=600&auto=format&fit=crop',
-  world: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?q=80&w=800&h=600&auto=format&fit=crop',
-  entertainment: 'https://images.unsplash.com/photo-1603190287605-e6ade32fa852?q=80&w=800&h=600&auto=format&fit=crop',
-  default: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=800&h=600&auto=format&fit=crop'
-};
-
-const NewsCard = ({ article, isHero = false, token }) => {
-  const [showScore, setShowScore] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const { lang } = useContext(LanguageContext);
-
-  // Return fixed image based on category
-  const getImageUrl = (category) => {
+  // Return local fixed image based on category
+  const getImageUrl = (category, newsId) => {
     const cat = String(category || '').toLowerCase();
-    return CATEGORY_IMAGES[cat] || CATEGORY_IMAGES.default;
+    
+    // Choose between image 1 and 2 based on newsId hash
+    let hash = 0;
+    const str = String(newsId || '');
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = (Math.abs(hash) % 2) + 1; // either 1 or 2
+    
+    // Check if category has images, otherwise default
+    const validCats = ['technology', 'sports', 'finance', 'business', 'politics', 'education', 'world', 'entertainment'];
+    const selectedCat = validCats.includes(cat) ? cat : 'default';
+    
+    return `/images/categories/${selectedCat}-${index}.jpg`;
   };
 
   const handleSave = async (e) => {
