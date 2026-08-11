@@ -1,70 +1,112 @@
-# Jagrit — Full Consumer News Product
+# Jagrit — Personalized AI News Platform
 
-Jagrit is a personalized bilingual news platform built on a real ML ranking pipeline trained on Microsoft's MIND news recommendation dataset. It provides a Times of India / The Hindu-style editorial frontend, a Node.js product backend for auth and translation caching, and a Python FastAPI ML service for real-time XGBoost candidate ranking.
+Jagrit is a fully functional, personalized bilingual news platform that combines real-time news ingestion with machine learning to deliver a curated "For You" experience. Inspired by premium editorial websites (like The Hindu or New York Times), Jagrit uses a microservices architecture featuring a React frontend, a Node.js API backend, and a Python-based ML recommendation engine.
 
-## Architecture
+## 🚀 Key Features
+
+* **Real-time News Ingestion**: Automatically aggregates live breaking news from **NewsAPI** and premium **RSS Feeds** (Times of India, The Hindu, BBC, CNBC), extracting real high-quality images and full summaries.
+* **ML-Powered "For You" Feed**: Uses an **XGBoost** ranking model trained on Microsoft's MIND dataset to serve personalized top stories based on the user's reading history and category preferences.
+* **Bilingual Experience (AI Translation)**: Integrates the **Google Gemini (1.5 Flash) API** to instantly translate English news headlines and abstracts into Hindi. Translations are intelligently cached in **MongoDB** to guarantee fast load times and minimize API costs.
+* **Hybrid Feed Layout**: The UI splits the feed into a premium **For You** hero section (top 6 ML-ranked articles) and a **Global News** grid for trending worldwide stories.
+* **Category Filtering**: A sleek sidebar allows users to filter the entire feed by specific topics (Politics, Technology, Business, Sports, etc.).
+* **Saved News Archive**: Users can bookmark their favorite articles and access them later in a dedicated, personalized "Saved News" dashboard.
+* **Zero-Downtime Microservices**: Designed to be deployed across Vercel (Frontend), Render (Backend), and a dedicated VM for the Python ML Engine + Redis.
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend (Web)
+* **React.js** (Vite): Fast, modern component-based UI.
+* **Tailwind CSS**: Custom, responsive editorial-style design without bloated stylesheets.
+* **React Router v6**: Client-side routing for seamless navigation.
+
+### Backend (API & Ingestion)
+* **Node.js & Express.js**: Handles user authentication (JWT), preferences, and live news fetching.
+* **MongoDB (Mongoose)**: Primary database for user data, preferences, and translated text caching.
+* **RSS Parser & Axios**: Used in the scheduled ingestion cron jobs to parse live news sources and fetch data.
+* **Google Gemini API**: Powers the English-to-Hindi translation layer.
+
+### ML & Recommendation Service
+* **Python & FastAPI**: High-performance API serving the machine learning model.
+* **XGBoost & Pandas**: The core ranking algorithm and feature engineering library.
+* **Redis**: Acts as an ultra-fast, in-memory **Feature Store**. It holds the latest ingested news (`news:recent` ZSET and Hashes) and serves them instantly to the ML ranker.
+* **Kafka** *(Architecture Support)*: Streams real MIND behavior logs to simulate production data.
+
+---
+
+## 🏗️ Architecture
 
 ```text
-       [ Web (React / Vite) ]  <-- Port 3000 (Gestify/Editorial style UI)
+       [ Web (React / Vite) ]  <-- (Editorial UI, Filters, Saved News)
                  |
                  v
-   [ Backend (Node/Express) ]  <-- Port 5000 (Auth, Preferences, Translation Cache)
+   [ Backend (Node/Express) ]  <-- (Auth, Ingestion Cron, Translation Cache)
                  |   \
-                 |    \--> [ Gemini API ] (EN->HI Translations)
+                 |    \--> [ Gemini 1.5 API ] (EN->HI Translations)
                  v
-      [ ML Service (FastAPI) ] <-- Port 8000 (XGBoost Ranker, Candidate Gen)
+      [ ML Service (FastAPI) ] <-- (XGBoost Ranker, Candidate Gen)
                  |
                  v
-   [ Redis (Feature Store) ]   <-- Receives live feature updates
-                 ^
-                 |
-    [ Kafka (Event Stream) ]   <-- Streams real MIND behavior logs
+   [ Redis (Feature Store) ]   <-- (Live News Hashes & ZSETs)
 ```
 
-## Highlights & Technical Decisions
-- **ML Pipeline First**: The core of Jagrit is a real-world ranking system. It utilizes the MIND-small dataset to train an XGBoost ranking model.
-- **Microservices Architecture**: The system intentionally separates the ML service (Python) from the product backend (Node.js). This allows the ML team to iterate on the model independently of the product engineering team.
-- **Gemini Translation Caching**: Hindi translation is powered by the Gemini API, but critically, it is cached in MongoDB. This prevents redundant API calls and latency, showing strong systems-design thinking.
-- **Unbiased Offline Evaluation (Replay Method)**: We implemented the Replay Method (Li et al. 2011) to conduct rigorous A/B testing on observational logged data, avoiding the biases of naive CTR comparison.
+---
 
-## Quick Start (Demo)
-Ensure you have Docker Desktop installed, then run the demo script:
+## ⚡ Quick Start (Local Development)
+
+### Prerequisites
+* Node.js (v18+)
+* Python 3.9+
+* Redis Server (running locally on port 6379)
+* MongoDB (Local or Atlas URI)
+
+### 1. Setup Backend
 ```bash
-./demo.sh
+cd backend
+npm install
+# Create a .env file with MONGODB_URI, JWT_SECRET, GEMINI_API_KEY, NEWS_API_KEY, REDIS_URL
+npm start
 ```
 
-## Resume Highlights
-- Architected and shipped a full-stack personalized news platform (Jagrit) with a React frontend, Node.js backend, and Python FastAPI ML service, demonstrating end-to-end product ownership.
-- Engineered a streaming Kafka-Redis feature store to dynamically aggregate user history and global CTR, simulating production data streams from the Microsoft MIND dataset.
-- Trained an XGBoost ranking model achieving ~0.58 AUC and ~0.26 MRR, explicitly evaluating tradeoffs against deep learning baselines (DeepFM, NRMS).
-- Integrated Google Gemini API for English-to-Hindi translations with an optimized MongoDB caching layer, reducing external API costs and improving feed load times.
-- Implemented the Replay Method (Li et al. 2011) to conduct unbiased offline A/B testing on logged observational data, proving a statistically significant CTR lift (p < 0.05) over logistic regression baselines.
+### 2. Setup ML Service
+```bash
+cd ml-service
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
 
-## Production Deployment Guide
+### 3. Setup Frontend
+```bash
+cd web
+npm install
+# Create a .env file with VITE_API_URL=http://localhost:5000
+npm run dev
+```
+
+---
+
+## 🌐 Production Deployment Guide
 
 Since Jagrit utilizes a microservices architecture, you can deploy the frontend and backend on serverless platforms (like Vercel and Render), while the ML service needs a dedicated environment.
 
-### 1. ML Service (Python FastAPI, Kafka, Redis)
-Because the ML service requires Kafka and Redis for the real-time feature store, the easiest way to deploy it is via a single Virtual Machine (VM) using Docker Compose.
-- **Provider**: AWS EC2, DigitalOcean Droplet, or Linode. A machine with at least 4GB RAM is recommended.
-- **Steps**:
-  1. SSH into your VM.
-  2. Clone the repository: `git clone https://github.com/khushalmidha/jagrit.git`
-  3. Navigate to the `ml-service` directory: `cd jagrit/ml-service`
-  4. Run the Docker Compose stack: `docker-compose -f docker-compose.yml -f docker-compose.kafka.yml up -d`
-  5. Your ML API will now be live on `http://<YOUR_VM_IP>:8000`.
+### 1. Product Backend (Node.js)
+* **Provider**: Render (Web Service)
+* **Settings**:
+  * Root Directory: `backend`
+  * Build Command: `npm install`
+  * Start Command: `npm start`
+  * Env Vars: `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `NEWS_API_KEY`, `REDIS_URL` (From Aiven/Upstash), and `ML_SERVICE_URL`.
 
-### 2. Product Backend (Node.js)
-- **Provider**: Render (Web Service)
-- **Settings**:
-  - Root Directory: `backend`
-  - Build Command: `npm install`
-  - Start Command: `npm start`
-  - Env Vars: `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, and `ML_SERVICE_URL` (Set this to `http://<YOUR_VM_IP>:8000`).
+### 2. Web Frontend (React)
+* **Provider**: Vercel
+* **Settings**: 
+  * Root Directory: `web`
+  * Framework Preset: Vite
+  * Env Vars: `VITE_API_URL` pointing to your deployed Render backend.
 
-### 3. Web Frontend (React)
-- **Provider**: Vercel
-- **Settings**: 
-  - Root Directory: `web`
-  - Framework Preset: Vite
-  - *Note: Remember to update the hardcoded `localhost:5000` URLs in the React codebase to your new Render backend URL before pushing to Vercel.*
+### 3. ML Service (Python FastAPI)
+* **Provider**: AWS EC2, DigitalOcean, or Render Docker Service.
+* Ensure you connect it to the same remote `REDIS_URL` used by the Node.js backend so the ML engine can access the live news ingested by the backend.
