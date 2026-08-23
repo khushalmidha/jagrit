@@ -15,9 +15,10 @@ redis.on('error', (err) => {
   console.error('Redis error in mlServiceClient:', err.message);
 });
 
-const getRecommendations = async (mindUserId, topK = 15) => {
+const getRecommendations = async (mindUserId, topK = 15, model = 'xgboost') => {
   try {
-    const response = await axios.post(`${ML_SERVICE_URL}/recommend`, {
+    const endpoint = model === 'nrms' ? '/recommend/v2' : '/recommend';
+    const response = await axios.post(`${ML_SERVICE_URL}${endpoint}`, {
       user_id: mindUserId,
       top_k: topK
     }, { timeout: 5000 });

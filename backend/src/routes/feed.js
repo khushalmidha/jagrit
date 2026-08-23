@@ -16,9 +16,10 @@ router.get('/', auth, async (req, res) => {
     
     // lang param overrides user pref
     const lang = req.query.lang || (prefs ? prefs.language : 'en');
+    const model = req.query.model || 'xgboost';
     
     // Get recommendations from ML service
-    const mlResponse = await mlServiceClient.getRecommendations(user.mind_user_id, 20);
+    const mlResponse = await mlServiceClient.getRecommendations(user.mind_user_id, 20, model);
     
     let articles = mlResponse.recommendations;
     

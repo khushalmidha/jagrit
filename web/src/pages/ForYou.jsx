@@ -14,6 +14,7 @@ const ForYou = () => {
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isColdStart, setIsColdStart] = useState(false);
+  const [model, setModel] = useState('xgboost');
 
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -24,7 +25,7 @@ const ForYou = () => {
     }
 
     setLoading(true);
-    axios.get(`${API_URL}/api/feed?lang=${lang}`, {
+    axios.get(`${API_URL}/api/feed?lang=${lang}&model=${model}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     .then(res => {
@@ -33,7 +34,7 @@ const ForYou = () => {
     })
     .catch(console.error)
     .finally(() => setLoading(false));
-  }, [token, lang]);
+  }, [token, lang, model]);
 
   if (loading) {
     return (
@@ -92,9 +93,27 @@ const ForYou = () => {
       {/* Newspaper style header for the section */}
       <div className="mb-10 flex flex-col items-center border-b-[6px] border-black pb-6 relative">
         <h1 className="text-6xl font-serif font-black text-gray-900 tracking-tight uppercase">{t('For You')}</h1>
-        <p className="mt-3 text-gray-500 font-serif italic text-lg border-t border-b border-gray-300 py-1 px-4">
+        <p className="mt-3 text-gray-500 font-serif italic text-lg border-t border-b border-gray-300 py-1 px-4 mb-4">
           {t('Personalized Edition • Powered by Jagrit AI')}
         </p>
+        
+        {/* Model Tabs */}
+        {token && (
+          <div className="flex space-x-4 mt-2">
+            <button 
+              onClick={() => setModel('xgboost')}
+              className={`px-4 py-2 font-bold uppercase tracking-wider text-sm border-2 transition ${model === 'xgboost' ? 'bg-black text-white border-black' : 'bg-white text-black border-black hover:bg-gray-100'}`}
+            >
+              Recommend (XGBoost)
+            </button>
+            <button 
+              onClick={() => setModel('nrms')}
+              className={`px-4 py-2 font-bold uppercase tracking-wider text-sm border-2 transition ${model === 'nrms' ? 'bg-black text-white border-black' : 'bg-white text-black border-black hover:bg-gray-100'}`}
+            >
+              Deep Recommend (NRMS)
+            </button>
+          </div>
+        )}
         
         {/* Admin Utility Button for Live News */}
         <button 
