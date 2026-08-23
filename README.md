@@ -84,7 +84,7 @@ graph LR
     
     E -->|Feed Request| G(Ranking Engine)
     G -->|Candidate Generation| D
-    G -->|Scoring (XGB/NRMS)| H[Top K Articles]
+    G -->|"Scoring (XGBoost or NRMS)"| H[Top K Articles]
     H --> E
 ```
 ---
