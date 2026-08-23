@@ -4,6 +4,7 @@ import logging
 import json
 from app.schemas import RecommendRequest, RecommendResponse, RecommendedArticle
 from app.inference import RankerService
+from app.inference_nrms import NRMSRankerService
 
 # Setup structured JSON logging
 logger = logging.getLogger("ranking_api")
@@ -19,19 +20,23 @@ app = FastAPI(title="Real-Time Content Ranking API")
 metrics = {
     "total_requests": 0,
     "total_latency_ms": 0,
-    "cold_starts": 0
+    "cold_starts": 0,
+    "total_requests_v2": 0,
+    "total_latency_ms_v2": 0
 }
 
 ranker_service = None
+nrms_ranker_service = None
 
 @app.on_event("startup")
 def startup_event():
-    global ranker_service
+    global ranker_service, nrms_ranker_service
     logger.info("Initializing RankerService...")
     # Read redis config from env
     redis_url = os.environ.get("REDIS_URL")
     redis_host = os.environ.get("REDIS_HOST", "localhost")
     ranker_service = RankerService(redis_host=redis_host, redis_url=redis_url)
+    nrms_ranker_service = NRMSRankerService(redis_client=None)
     logger.info("RankerService initialized.")
 
 @app.post("/recommend", response_model=RecommendResponse)
@@ -61,6 +66,33 @@ def recommend(request: RecommendRequest):
         )
     except Exception as e:
         logger.error(f"Error serving recommendation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/recommend/v2", response_model=RecommendResponse)
+def recommend_v2(request: RecommendRequest):
+    global metrics
+    
+    logger.info(f"[v2 DL] Received recommendation request for user: {request.user_id}")
+    
+    try:
+        recs_data, latency, is_cold_start = nrms_ranker_service.recommend(request.user_id, request.top_k)
+        
+        # Update metrics
+        metrics["total_requests_v2"] += 1
+        metrics["total_latency_ms_v2"] += latency
+            
+        articles = [RecommendedArticle(**r) for r in recs_data]
+        
+        logger.info(f"[v2 DL] Served {len(articles)} recommendations in {latency:.2f}ms. Cold start: {is_cold_start}")
+        
+        return RecommendResponse(
+            recommendations=articles,
+            model_version=nrms_ranker_service.model_version,
+            latency_ms=latency,
+            is_cold_start=is_cold_start
+        )
+    except Exception as e:
+        logger.error(f"[v2 DL] Error serving recommendation: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/health")

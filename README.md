@@ -37,20 +37,56 @@ Jagrit is a fully functional, personalized bilingual news platform that combines
 
 ## 🏗️ Architecture
 
-```text
-       [ Web (React / Vite) ]  <-- (Editorial UI, Filters, Saved News)
-                 |
-                 v
-   [ Backend (Node/Express) ]  <-- (Auth, Ingestion Cron, Translation Cache)
-                 |   \
-                 |    \--> [ Gemini 1.5 API ] (EN->HI Translations)
-                 v
-      [ ML Service (FastAPI) ] <-- (XGBoost Ranker, Candidate Gen)
-                 |
-                 v
-   [ Redis (Feature Store) ]   <-- (Live News Hashes & ZSETs)
+```mermaid
+graph TD
+    %% Define Styles
+    classDef frontend fill:#38bdf8,stroke:#0284c7,stroke-width:2px,color:#fff,font-weight:bold
+    classDef backend fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff,font-weight:bold
+    classDef ml fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:#fff,font-weight:bold
+    classDef external fill:#6366f1,stroke:#4338ca,stroke-width:2px,color:#fff,font-weight:bold
+    classDef data fill:#f43f5e,stroke:#be123c,stroke-width:2px,color:#fff,font-weight:bold
+
+    subgraph User Experience
+        Web["💻 React / Vite<br>(Editorial UI, Filters, Saved News)"]:::frontend
+    end
+
+    subgraph Backend Services
+        API["⚙️ Node/Express<br>(Auth, Ingestion Cron, Translation Cache)"]:::backend
+        Gemini["🧠 Google Gemini API<br>(EN-HI Translations)"]:::external
+    end
+
+    subgraph ML & Intelligence
+        ML["🤖 ML Service (FastAPI)<br>(XGBoost / NRMS Deep Learning)"]:::ml
+        Redis["🗄️ Redis Feature Store<br>(Live News & Vectors)"]:::data
+    end
+
+    %% Connections
+    Web -->|User Request| API
+    API -->|Fetch translations| Gemini
+    API -->|Request recommendations| ML
+    ML -->|Fetch user/news features| Redis
+    API -->|Live news ingestion| Redis
 ```
 
+## 🧩 Component Diagram
+
+```mermaid
+graph LR
+    classDef node fill:#ec4899,stroke:#be185d,stroke-width:2px,color:#fff
+    classDef ext fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    
+    A[NewsAPI / RSS Feeds]:::ext -->|Cron Job| B(Ingestion Engine)
+    B -->|Parse & Clean| C[(MongoDB)]
+    B -->|Feature Prep| D[(Redis ZSETs)]
+    
+    E[Client App]:::ext -->|Login/Pref| F(User Service)
+    F --> C
+    
+    E -->|Feed Request| G(Ranking Engine)
+    G -->|Candidate Generation| D
+    G -->|Scoring (XGB/NRMS)| H[Top K Articles]
+    H --> E
+```
 ---
 
 ## ⚡ Quick Start (Local Development)

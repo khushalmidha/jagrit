@@ -18,3 +18,12 @@ node_modules/
 .env
 dist/
 .env.local
+
+# DL Data and Checkpoints
+ml-service/data/raw/
+ml-service/dl/data/*.zip
+ml-service/dl/data/*.txt
+ml-service/dl/data/*.npy
+ml-service/dl/data/*.pkl
+ml-service/dl/checkpoints/
+ml-service/dl/nrms_results.md
