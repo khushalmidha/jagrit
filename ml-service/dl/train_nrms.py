@@ -64,7 +64,8 @@ def train():
     
     # MLflow Setup
     os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
-    mlflow.set_tracking_uri(f"file://{mlruns_dir}")
+    import pathlib
+    mlflow.set_tracking_uri(pathlib.Path(mlruns_dir).as_uri())
     mlflow.set_experiment("nrms-deep-learning")
     
     with mlflow.start_run(run_name="NRMS_Training"):
