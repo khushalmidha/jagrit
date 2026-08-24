@@ -66,7 +66,7 @@ graph TD
     Web -->|User Request| API
     API -->|Fetch translations| Gemini
     API -->|Request recommendations| ML
-    API -->|Ask Questions (RAG)| ML
+    API -->|Ask Questions for RAG| ML
     ML -->|Generate Answer| Gemini
     ML -->|Fetch user/news features| Redis
     API -->|Live news ingestion| Redis
@@ -91,9 +91,9 @@ graph LR
     G -->|"Scoring (XGBoost or NRMS)"| H[Top K Articles]
     H --> E
     
-    E -->|Ask News Question| I(RAG Service)
+    E -->|Ask News Question| I[RAG Service]
     I -->|Fetch Context| D
-    I -->|Prompt w/ Context| J[Gemini API]:::ext
+    I -->|Prompt with Context| J[Gemini API]:::ext
     J -->|Context-Aware Answer| E
 ```
 ---
