@@ -54,11 +54,11 @@ graph TD
 
     subgraph Backend Services
         API["⚙️ Node/Express<br>(Auth, Ingestion Cron, Translation Cache)"]:::backend
-        Gemini["🧠 Google Gemini API<br>(EN-HI Translations)"]:::external
+        Gemini["🧠 Google Gemini API<br>(Translations & RAG)"]:::external
     end
 
     subgraph ML & Intelligence
-        ML["🤖 ML Service (FastAPI)<br>(XGBoost / NRMS Deep Learning)"]:::ml
+        ML["🤖 ML Service (FastAPI)<br>(Ranker & RAG Pipeline)"]:::ml
         Redis["🗄️ Redis Feature Store<br>(Live News & Vectors)"]:::data
     end
 
@@ -66,6 +66,8 @@ graph TD
     Web -->|User Request| API
     API -->|Fetch translations| Gemini
     API -->|Request recommendations| ML
+    API -->|Ask Questions (RAG)| ML
+    ML -->|Generate Answer| Gemini
     ML -->|Fetch user/news features| Redis
     API -->|Live news ingestion| Redis
 ```
@@ -88,6 +90,11 @@ graph LR
     G -->|Candidate Generation| D
     G -->|"Scoring (XGBoost or NRMS)"| H[Top K Articles]
     H --> E
+    
+    E -->|Ask News Question| I(RAG Service)
+    I -->|Fetch Context| D
+    I -->|Prompt w/ Context| J[Gemini API]:::ext
+    J -->|Context-Aware Answer| E
 ```
 ---
 
