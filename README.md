@@ -7,6 +7,7 @@ Jagrit is a fully functional, personalized bilingual news platform that combines
 * **Real-time News Ingestion**: Automatically aggregates live breaking news from **NewsAPI** and premium **RSS Feeds** (Times of India, The Hindu, BBC, CNBC), extracting real high-quality images and full summaries.
 * **ML-Powered "For You" Feed**: Uses an **XGBoost** ranking model trained on Microsoft's MIND dataset to serve personalized top stories based on the user's reading history and category preferences.
 * **Bilingual Experience (AI Translation)**: Integrates the **Google Gemini (1.5 Flash) API** to instantly translate English news headlines and abstracts into Hindi. Translations are intelligently cached in **MongoDB** to guarantee fast load times and minimize API costs.
+* **AI News Assistant (RAG Pipeline)**: Features a Retrieval-Augmented Generation pipeline using Gemini 1.5 Flash, allowing users to ask natural language questions about the latest news and get context-aware answers directly from the real-time feature store.
 * **Hybrid Feed Layout**: The UI splits the feed into a premium **For You** hero section (top 6 ML-ranked articles) and a **Global News** grid for trending worldwide stories.
 * **Category Filtering**: A sleek sidebar allows users to filter the entire feed by specific topics (Politics, Technology, Business, Sports, etc.).
 * **Saved News Archive**: Users can bookmark their favorite articles and access them later in a dedicated, personalized "Saved News" dashboard.
@@ -30,6 +31,7 @@ Jagrit is a fully functional, personalized bilingual news platform that combines
 ### ML & Recommendation Service
 * **Python & FastAPI**: High-performance API serving the machine learning model.
 * **XGBoost & Pandas**: The core ranking algorithm and feature engineering library.
+* **Google Gemini API (google-generativeai)**: Powers the RAG pipeline for conversational question answering based on the live news context.
 * **Redis**: Acts as an ultra-fast, in-memory **Feature Store**. It holds the latest ingested news (`news:recent` ZSET and Hashes) and serves them instantly to the ML ranker.
 * **Kafka** *(Architecture Support)*: Streams real MIND behavior logs to simulate production data.
 
@@ -111,6 +113,7 @@ cd ml-service
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+# Ensure GEMINI_API_KEY is exported or present in a .env file for the RAG feature
 uvicorn app.main:app --reload --port 8000
 ```
 

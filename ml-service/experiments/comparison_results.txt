@@ -1,0 +1,21 @@
+
+================================================================================
+ TASK 5: HEAD-TO-HEAD COMPARISON REPORT
+================================================================================
+XGBoost model or features not found. Using placeholders for XGBoost.
+NRMS results not found. Did you run train_nrms.py and evaluate_nrms.py?
+Compute-constrained limits imply lower than paper performance.
+
+    Model                          AUC     MRR     nDCG@5    nDCG@10   Train time   Params
+    Logistic Regression (baseline)  53.20   20.10    22.30      28.50     <1m        ~1k
+    XGBoost (current production)    0.00    0.00     0.00       0.00      <5m        ~50k
+    NRMS (compute-constrained)      0.00    0.00     0.00       0.00      ~15m       ~6M
+    Published NRMS (yflyl613 repo)  66.61   31.86    35.19      41.46     —          —
+    Published LibFM (MIND paper)    59.74   26.33    27.95      34.29     —          —
+    Published DeepFM (MIND paper)   59.89   26.21    27.74      34.06     —          —
+    
+================================================================================
+ STATISTICAL SIGNIFICANCE (REPLAY METHOD)
+================================================================================
+Cannot run Replay Method. Both XGBoost and NRMS models must be fully trained.
+Run train_nrms.py to generate nrms_best.pt first.

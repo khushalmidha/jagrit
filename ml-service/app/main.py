@@ -2,9 +2,10 @@ import os
 from fastapi import FastAPI, HTTPException
 import logging
 import json
-from app.schemas import RecommendRequest, RecommendResponse, RecommendedArticle
+from app.schemas import RecommendRequest, RecommendResponse, RecommendedArticle, RAGRequest, RAGResponse
 from app.inference import RankerService
 from app.inference_nrms import NRMSRankerService
+from app.rag_service import RAGService
 
 # Setup structured JSON logging
 logger = logging.getLogger("ranking_api")
@@ -27,16 +28,18 @@ metrics = {
 
 ranker_service = None
 nrms_ranker_service = None
+rag_service = None
 
 @app.on_event("startup")
 def startup_event():
-    global ranker_service, nrms_ranker_service
+    global ranker_service, nrms_ranker_service, rag_service
     logger.info("Initializing RankerService...")
     # Read redis config from env
     redis_url = os.environ.get("REDIS_URL")
     redis_host = os.environ.get("REDIS_HOST", "localhost")
     ranker_service = RankerService(redis_host=redis_host, redis_url=redis_url)
     nrms_ranker_service = NRMSRankerService(redis_client=None)
+    rag_service = RAGService(redis_host=redis_host, redis_url=redis_url)
     logger.info("RankerService initialized.")
 
 @app.post("/recommend", response_model=RecommendResponse)
@@ -114,3 +117,23 @@ def get_metrics():
         "avg_latency_ms": round(avg_lat, 2),
         "cold_start_percentage": round(cold_pct, 2)
     }
+
+@app.post("/rag/ask", response_model=RAGResponse)
+def ask_rag(request: RAGRequest):
+    logger.info(f"Received RAG request: {request.query}")
+    
+    try:
+        answer, articles, latency = rag_service.ask(request.query)
+        
+        context_articles = [RecommendedArticle(**r) for r in articles]
+        
+        logger.info(f"Served RAG response in {latency:.2f}ms")
+        
+        return RAGResponse(
+            answer=answer,
+            context_articles=context_articles,
+            latency_ms=latency
+        )
+    except Exception as e:
+        logger.error(f"Error serving RAG response: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")

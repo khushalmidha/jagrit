@@ -19,3 +19,11 @@ class RecommendResponse(BaseModel):
     model_version: str
     latency_ms: float
     is_cold_start: bool
+
+class RAGRequest(BaseModel):
+    query: str
+
+class RAGResponse(BaseModel):
+    answer: str
+    context_articles: List[RecommendedArticle]
+    latency_ms: float

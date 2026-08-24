@@ -13,3 +13,4 @@ kagglehub
 scipy
 pytest
 requests
+google-generativeai

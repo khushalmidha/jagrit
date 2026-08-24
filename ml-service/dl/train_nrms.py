@@ -63,6 +63,7 @@ def train():
     num_negatives = 2
     
     # MLflow Setup
+    os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
     mlflow.set_tracking_uri(f"file://{mlruns_dir}")
     mlflow.set_experiment("nrms-deep-learning")
     
