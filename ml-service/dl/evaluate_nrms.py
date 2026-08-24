@@ -77,6 +77,10 @@ def evaluate():
     
     with torch.no_grad():
         for i, batch in enumerate(dev_loader):
+            if i >= 100:
+                print("Reached evaluation limit of 100 impressions.")
+                break
+                
             history = batch['history']
             candidates = batch['candidates']
             labels = batch['labels'].squeeze(0).numpy()

@@ -17,15 +17,8 @@ def load_glove(word2idx_path, embed_dim=300):
         return np.load(embed_npy)
         
     if not os.path.exists(glove_txt):
-        if not os.path.exists(glove_zip):
-            print("Downloading GloVe embeddings (glove.6B)... this might take a while.")
-            url = "http://nlp.stanford.edu/data/glove.6B.zip"
-            urllib.request.urlretrieve(url, glove_zip)
-            print("Download complete.")
-            
-        print("Extracting GloVe embeddings...")
-        with zipfile.ZipFile(glove_zip, 'r') as zip_ref:
-            zip_ref.extractall(data_dir)
+        print("Skipping 800MB GloVe download for compute-constrained local run.")
+        print("Falling back to randomly initialized embeddings.")
             
     print("Loading word2idx...")
     with open(word2idx_path, 'rb') as f:
@@ -38,18 +31,20 @@ def load_glove(word2idx_path, embed_dim=300):
     
     print("Building embedding matrix...")
     found = 0
-    with open(glove_txt, 'r', encoding='utf-8') as f:
-        for line in tqdm(f):
-            values = line.split()
-            word = values[0]
-            if word in word2idx:
-                idx = word2idx[word]
-                # some words might have irregular splits, verify length
-                if len(values[1:]) == embed_dim:
-                    embedding_matrix[idx] = np.asarray(values[1:], dtype='float32')
-                    found += 1
-                    
-    print(f"Found {found} / {vocab_size} words in GloVe.")
+    if os.path.exists(glove_txt):
+        with open(glove_txt, 'r', encoding='utf-8') as f:
+            for line in tqdm(f):
+                values = line.split()
+                word = values[0]
+                if word in word2idx:
+                    idx = word2idx[word]
+                    if len(values[1:]) == embed_dim:
+                        embedding_matrix[idx] = np.asarray(values[1:], dtype='float32')
+                        found += 1
+                        
+        print(f"Found {found} / {vocab_size} words in GloVe.")
+    else:
+        print("Using fully randomized embeddings as GloVe text file is absent.")
     
     np.save(embed_npy, embedding_matrix)
     print(f"Saved embedding matrix to {embed_npy}")

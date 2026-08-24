@@ -54,7 +54,7 @@ def precompute_vectors():
     
     news_vectors = {}
     with torch.no_grad():
-        for _, row in tqdm(df_news.iterrows(), total=len(df_news)):
+        for _, row in tqdm(df_news.head(1000).iterrows(), total=1000):
             news_id = row['news_id']
             title = str(row['title'])
             tokens = torch.tensor([tokenize(title)])
@@ -68,7 +68,7 @@ def precompute_vectors():
     user_vectors = {}
     pad_title = [word2idx['<PAD>']] * max_title_len
     with torch.no_grad():
-        for _, row in tqdm(df_beh.iterrows(), total=len(df_beh)):
+        for _, row in tqdm(df_beh.head(1000).iterrows(), total=1000):
             user_id = row['user_id']
             if user_id in user_vectors:
                 continue

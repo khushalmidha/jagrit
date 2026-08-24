@@ -56,7 +56,7 @@ def train():
     num_heads = 15
     hidden_dim = 200
     batch_size = 64
-    epochs = 3
+    epochs = 1
     lr = 3e-4
     max_title_len = 20
     max_history_len = 30
@@ -120,10 +120,17 @@ def train():
                 
                 total_loss += loss.item()
                 
+                if (i+1) % 10 == 0:
+                    print(f"Epoch [{epoch+1}/{epochs}], Step [{i+1}/100 (Constrained)], Loss: {loss.item():.4f}")
+                
+                if i >= 100:
+                    print("Reached compute-constrained limit of 100 steps. Finishing epoch.")
+                    break
+                
                 if (i+1) % 50 == 0:
                     print(f"Epoch [{epoch+1}/{epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}")
             
-            avg_train_loss = total_loss / len(train_loader)
+            avg_train_loss = total_loss / (i + 1)
             print(f"Epoch {epoch+1} Average Training Loss: {avg_train_loss:.4f}")
             mlflow.log_metric("train_loss", avg_train_loss, step=epoch)
             
