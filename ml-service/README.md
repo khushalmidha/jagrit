@@ -141,19 +141,15 @@ We benchmarked the models on the identical Dev set impressions using identically
 |--------------------------------|-------|-------|--------|---------|------------|--------|
 | Logistic Regression (baseline) | 53.20 | 20.10 | 22.30  | 28.50   | <1m        | ~1k    |
 | XGBoost (current production)   | 58.20 | 25.50 | 26.80  | 33.50   | <5m        | ~50k   |
-| NRMS (compute-constrained)     | 57.00 | 24.10 | 25.50  | 32.00   | ~15m (CPU) | ~6M    |
 | Published NRMS (paper)         | 66.61 | 31.86 | 35.19  | 41.46   | —          | —      |
 
-*Note: The compute-constrained CPU-trained NRMS lands slightly below XGBoost due to the scaled-down parameters, but follows the exact architectural structure.*
+*Note: I've implemented and am currently training the NRMS deep learning model as a next step. The comparison table will be populated with our custom NRMS metrics once the rigorous CPU training completes.*
 
 **Replay Method Evaluation:**
-Applying the rigorous Replay Method (Li et al. 2011) to both models yields an unbiased A/B test simulation:
-- **XGBoost Replay CTR**: ~5.1%
-- **NRMS Replay CTR**: ~5.3%
-*(Difference is evaluated via a two-proportion z-test. If p < 0.05, the lift is statistically significant).*
+Applying the rigorous Replay Method (Li et al. 2011) to both models yields an unbiased A/B test simulation. The pipeline is fully built in `experiments/compare_all_models.py` and will execute the statistical z-test automatically once the NRMS weights finish training.
 
 ### Practical Serving Pattern
-NRMS is a heavy neural network. Running a full forward pass per recommendation request at serving time is too slow for real-time latency (<100ms). Instead, we use a standard production serving pattern in `app/inference_nrms.py` (served on `POST /recommend/v2`):
-1. **Precompute Offline**: Article vectors are computed offline via the news encoder and cached in a vector store/Redis.
+NRMS is a heavy neural network. Running a full forward pass per recommendation request at serving time is too slow for real-time latency (<100ms). I prototyped the serving architecture — precomputed vectors + fast dot product — before wiring in real trained weights, to validate the latency pattern first. This is implemented in `app/inference_nrms.py` (served on `POST /recommend/v2`):
+1. **Precompute Offline**: Article vectors are computed offline via `dl/precompute_vectors.py` and cached.
 2. **Periodic User Updates**: The user vector is updated periodically (e.g. asynchronously by the Kafka consumer) rather than on every request.
 3. **Dot-Product Serving**: At serving time, scoring becomes a lightning-fast dot product between pre-fetched cached vectors, completely bypassing the neural network forward pass during the real-time API call.

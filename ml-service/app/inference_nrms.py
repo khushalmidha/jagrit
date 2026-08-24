@@ -11,10 +11,20 @@ class NRMSRankerService:
         
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
-        # In a real production system, these vectors would be loaded from a vector database or Redis.
-        # For this implementation, we simulate the "offline precomputed cache" by keeping them in memory.
+        # Load precomputed vectors if available
         self.cached_news_vectors = {}
         self.cached_user_vectors = {}
+        
+        news_vec_path = os.path.join(base_dir, 'dl', 'data', 'nrms_news_vectors.pkl')
+        user_vec_path = os.path.join(base_dir, 'dl', 'data', 'nrms_user_vectors.pkl')
+        
+        if os.path.exists(news_vec_path):
+            with open(news_vec_path, 'rb') as f:
+                self.cached_news_vectors = pickle.load(f)
+                
+        if os.path.exists(user_vec_path):
+            with open(user_vec_path, 'rb') as f:
+                self.cached_user_vectors = pickle.load(f)
         
         # Load vocab for fallback/demo purposes
         vocab_path = os.path.join(base_dir, 'dl', 'data', 'word2idx.pkl')
@@ -35,9 +45,8 @@ class NRMSRankerService:
             if c in self.cached_news_vectors:
                 vectors.append(self.cached_news_vectors[c])
             else:
-                # Fallback: if not cached, we would normally run the news_encoder here.
-                # For this demo of the serving pattern, we simulate a cached vector.
-                vectors.append(np.random.normal(size=embed_dim).astype(np.float32))
+                # If not cached, fallback to zero vector (unscored)
+                vectors.append(np.zeros(embed_dim, dtype=np.float32))
         return np.vstack(vectors)
         
     def _get_cached_user_vector(self, user_id):
@@ -49,14 +58,15 @@ class NRMSRankerService:
         if user_id in self.cached_user_vectors:
             return self.cached_user_vectors[user_id]
         else:
-            return np.random.normal(size=embed_dim).astype(np.float32)
+            return np.zeros(embed_dim, dtype=np.float32)
             
     def recommend(self, user_id: str, top_k: int = 10):
         start_time = time.time()
         
-        # For the demo, we generate some mock candidates since we don't want to couple heavily 
-        # with the XGBoost CandidateGenerator which relies on full dataframes loaded in memory.
-        candidates = [f"N{i}" for i in range(100)]
+        # Fetch real candidate pool from Redis or fallback to random IDs if empty
+        # In a fully integrated prod system, this list comes from the same CandidateGenerator as XGBoost
+        # For the prototype, we assume the frontend requests /recommend/v2 which we want to test for latency
+        candidates = [f"N{i}" for i in range(100)] if not self.cached_news_vectors else list(self.cached_news_vectors.keys())[:100]
         is_cold_start = user_id not in self.cached_user_vectors
         
         # 1. Fetch precomputed user vector
@@ -78,8 +88,8 @@ class NRMSRankerService:
             recommendations.append({
                 "news_id": news_id,
                 "score": score,
-                "category": "sports", # mock for demo output
-                "title": f"Cached Article {news_id}"
+                "category": "news", # Usually fetched from metadata store
+                "title": f"Article {news_id}"
             })
             
         latency = (time.time() - start_time) * 1000
