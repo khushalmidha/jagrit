@@ -27,3 +27,7 @@ ml-service/dl/data/*.npy
 ml-service/dl/data/*.pkl
 ml-service/dl/checkpoints/
 ml-service/dl/nrms_results.md
+ml-service/checkpoints/*.pt
+ml-service/checkpoints/*.bin
+*.pt
+*.bin
