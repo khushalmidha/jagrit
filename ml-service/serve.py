@@ -67,15 +67,16 @@ class RecommendationResponse(BaseModel):
 # In-Memory Feature Store & Model Manager
 # ==========================================
 class RecommenderEngine:
-    def __init__(self, base_dir: str):
-        self.base_dir = base_dir
-        self.checkpoints_dir = os.path.join(base_dir, "checkpoints")
+    def __init__(self, base_dir: Optional[str] = None):
+        self.base_dir = base_dir or os.path.dirname(os.path.abspath(__file__))
+        self.checkpoints_dir = os.path.join(self.base_dir, "checkpoints")
 
         # Models & Indexes
         self.faiss_index: Optional[faiss.Index] = None
         self.article_ids: List[str] = []
         self.xgb_ranker: Optional[xgb.XGBRanker] = None
         self.d_model = 256
+        self.is_initialized = False
 
         # Feature Store Caches
         self.article_catalog: Dict[str, Dict[str, Any]] = {}
@@ -86,6 +87,8 @@ class RecommenderEngine:
 
     def initialize(self):
         """Loads FAISS index, XGBoost ranker, catalog, and feature store."""
+        if self.is_initialized:
+            return
         logger.info("Initializing RecommenderEngine state...")
         faiss_path = os.path.join(self.checkpoints_dir, "faiss_index.bin")
         id_map_path = os.path.join(self.checkpoints_dir, "article_ids.json")
@@ -173,6 +176,9 @@ class RecommenderEngine:
                 if hist_str and hist_str != "nan":
                     self.user_history_store[uid] = hist_str.split()
 
+        self.is_initialized = True
+        logger.info("RecommenderEngine successfully initialized.")
+
     def _create_fallback_index(self):
         """Creates an in-memory FAISS index if offline."""
         self.article_ids = list(self.article_catalog.keys())[:500]
@@ -225,6 +231,8 @@ class RecommenderEngine:
         1. Stage 1: FAISS candidate generation (Top-50)
         2. Stage 2: Feature-store lookup & XGBoost LambdaMART reranking (Top-K)
         """
+        if not self.is_initialized:
+            self.initialize()
         t0 = time.perf_counter()
 
         # Step 1: User Vector
