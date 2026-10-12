@@ -36,7 +36,24 @@ logger = logging.getLogger("ServeAPI")
 class RecommendationRequest(BaseModel):
     user_id: str = Field(..., example="U13740", description="Target User Identifier")
     top_k: int = Field(default=10, ge=1, le=50, description="Number of ranked articles to return")
+    diversity_lambda: float = Field(default=0.75, ge=0.0, le=1.0, description="MMR Diversity Tradeoff (1.0 = Pure Relevance, 0.0 = Max Diversity)")
+    enable_diversity: bool = Field(default=True, description="Enable Maximal Marginal Relevance diversity reranking")
     include_features: bool = Field(default=False, description="Whether to include reranker feature debug logs")
+
+
+class FeedbackRequest(BaseModel):
+    user_id: str = Field(..., example="U13740", description="Target User Identifier")
+    article_id: str = Field(..., example="N12345", description="Interacted Article ID")
+    event_type: str = Field(..., example="click", description="'click', 'skip', or 'dwell'")
+    dwell_time_seconds: float = Field(default=0.0, ge=0.0, description="Time spent reading article in seconds")
+
+
+class FeedbackResponse(BaseModel):
+    status: str
+    message: str
+    user_id: str
+    total_history_events: int
+    negative_penalties: Dict[str, float]
 
 
 class RecommendedArticle(BaseModel):
@@ -61,6 +78,7 @@ class RecommendationResponse(BaseModel):
     recommendations: List[RecommendedArticle]
     latency_ms: LatencyBreakdown
     num_candidates_retrieved: int
+    diversity_enabled: bool = True
 
 
 # ==========================================
@@ -84,6 +102,7 @@ class RecommenderEngine:
         self.article_impressions_prior: Dict[str, int] = {}
         self.user_history_store: Dict[str, List[str]] = {}
         self.user_embedding_store: Dict[str, np.ndarray] = {}
+        self.user_negative_penalties: Dict[str, Dict[str, float]] = {}
 
     def initialize(self):
         """Loads FAISS index, XGBoost ranker, catalog, and feature store."""
@@ -225,11 +244,69 @@ class RecommenderEngine:
         self.user_embedding_store[user_id] = vec
         return vec
 
-    def recommend(self, user_id: str, top_k: int = 10) -> Dict[str, Any]:
+    def record_feedback(
+        self,
+        user_id: str,
+        article_id: str,
+        event_type: str,
+        dwell_time_seconds: float = 0.0,
+    ) -> Dict[str, Any]:
+        """
+        Processes real-time user feedback into the feature store:
+        - Click or Long Dwell (>=8s): Invalidate cached embedding, append to history, clear negative penalties.
+        - Skip or Quick Bounce (<3s): Penalize article category to prevent content fatigue & filter bubbles.
+        """
+        if not self.is_initialized:
+            self.initialize()
+
+        if user_id not in self.user_history_store:
+            self.user_history_store[user_id] = []
+        if user_id not in self.user_negative_penalties:
+            self.user_negative_penalties[user_id] = {}
+
+        meta = self.article_catalog.get(article_id, {})
+        cat = meta.get("category", "general")
+
+        if event_type == "click" or (event_type == "dwell" and dwell_time_seconds >= 8.0):
+            if article_id not in self.user_history_store[user_id]:
+                self.user_history_store[user_id].insert(0, article_id)
+                if len(self.user_history_store[user_id]) > 50:
+                    self.user_history_store[user_id].pop()
+            # Invalidate cached user embedding so it reflects updated history on next request
+            self.user_embedding_store.pop(user_id, None)
+            # Decay fatigue penalty
+            self.user_negative_penalties[user_id][cat] = max(
+                0.0, self.user_negative_penalties[user_id].get(cat, 0.0) - 0.20
+            )
+            msg = f"Recorded click for article '{article_id}' ({cat}). Real-time user profile updated."
+        elif event_type == "skip" or (event_type == "dwell" and dwell_time_seconds < 3.0):
+            current_pen = self.user_negative_penalties[user_id].get(cat, 0.0)
+            self.user_negative_penalties[user_id][cat] = min(0.80, current_pen + 0.15)
+            msg = f"Recorded skip/bounce for article '{article_id}'. Category '{cat}' fatigue penalty set to {self.user_negative_penalties[user_id][cat]:.2f}."
+        else:
+            msg = f"Recorded {event_type} interaction for article '{article_id}'."
+
+        return {
+            "status": "SUCCESS",
+            "message": msg,
+            "user_id": user_id,
+            "total_history_events": len(self.user_history_store[user_id]),
+            "negative_penalties": self.user_negative_penalties[user_id],
+        }
+
+    def recommend(
+        self,
+        user_id: str,
+        top_k: int = 10,
+        enable_diversity: bool = True,
+        diversity_lambda: float = 0.75,
+    ) -> Dict[str, Any]:
         """
         Executes 2-Stage Recommendation Pipeline:
-        1. Stage 1: FAISS candidate generation (Top-50)
-        2. Stage 2: Feature-store lookup & XGBoost LambdaMART reranking (Top-K)
+        1. Stage 1: FAISS candidate generation (Top-50 dense retrieval)
+        2. Stage 2: Feature-store lookup & XGBoost LambdaMART reranking
+        3. Stage 3: Calibrated score fusion + Negative fatigue penalties
+        4. Stage 4: Maximal Marginal Relevance (MMR) diversity reranking
         """
         if not self.is_initialized:
             self.initialize()
@@ -314,7 +391,6 @@ class RecommenderEngine:
         else:
             stage2_scores = s1_raw
 
-        # Load optimal ensemble weight (default: 0.70 Two-Tower + 0.30 Reranker)
         alpha = getattr(self, "ensemble_alpha", 0.70)
 
         # Min-max normalize per impression for calibrated score fusion
@@ -326,12 +402,54 @@ class RecommenderEngine:
         norm_s2 = _norm(stage2_scores)
         ensemble_scores = alpha * norm_s1 + (1.0 - alpha) * norm_s2
 
-        # Sort by final Ensemble score in descending order
-        rerank_indices = np.argsort(ensemble_scores)[::-1]
+        # Step 5: Real-time Negative Category Penalties from Skip / Quick-Bounce Feedback
+        user_penalties = self.user_negative_penalties.get(user_id, {})
+        for idx, (cid, meta, _) in enumerate(valid_candidates):
+            penalty = user_penalties.get(meta["category"], 0.0)
+            if penalty > 0.0:
+                ensemble_scores[idx] = max(0.0, ensemble_scores[idx] - penalty)
+
+        # Step 6: Maximal Marginal Relevance (MMR) Diversity Selection
+        if enable_diversity and len(valid_candidates) > top_k:
+            selected_indices: List[int] = []
+            candidate_pool = list(range(len(valid_candidates)))
+
+            while len(selected_indices) < top_k and candidate_pool:
+                best_mmr_score = -float("inf")
+                best_cand_idx = -1
+                best_pool_pos = -1
+
+                for pos, cand_idx in enumerate(candidate_pool):
+                    relevance = float(ensemble_scores[cand_idx])
+                    cand_cat = valid_candidates[cand_idx][1]["category"]
+
+                    if not selected_indices:
+                        diversity_penalty = 0.0
+                    else:
+                        diversity_penalty = max(
+                            1.0 if valid_candidates[s][1]["category"] == cand_cat else 0.0
+                            for s in selected_indices
+                        )
+
+                    mmr_val = diversity_lambda * relevance - (1.0 - diversity_lambda) * diversity_penalty
+                    if mmr_val > best_mmr_score:
+                        best_mmr_score = mmr_val
+                        best_cand_idx = cand_idx
+                        best_pool_pos = pos
+
+                if best_cand_idx >= 0:
+                    selected_indices.append(best_cand_idx)
+                    candidate_pool.pop(best_pool_pos)
+                else:
+                    break
+            rerank_indices = selected_indices
+        else:
+            rerank_indices = list(np.argsort(ensemble_scores)[::-1][:top_k])
+
         t3 = time.perf_counter()
 
         recommendations = []
-        for rank, idx in enumerate(rerank_indices[:top_k], start=1):
+        for rank, idx in enumerate(rerank_indices, start=1):
             cid, meta, s1_score = valid_candidates[idx]
             recommendations.append(
                 RecommendedArticle(
@@ -357,6 +475,7 @@ class RecommenderEngine:
             "recommendations": recommendations,
             "latency_ms": latency,
             "num_candidates_retrieved": len(valid_candidates),
+            "diversity_enabled": enable_diversity,
         }
 
 
@@ -409,11 +528,33 @@ def health_check():
 def get_recommendations(request: RecommendationRequest):
     """
     Sub-40ms P95 Personalized News Recommendation Endpoint.
-    Retrieves Top-50 via FAISS and reranks to Top-K via Ensemble Learning.
+    Retrieves Top-50 via FAISS, reranks via Ensemble Learning, and diversifies via MMR.
     """
     eng = get_engine()
-    result = eng.recommend(user_id=request.user_id, top_k=request.top_k)
+    result = eng.recommend(
+        user_id=request.user_id,
+        top_k=request.top_k,
+        enable_diversity=request.enable_diversity,
+        diversity_lambda=request.diversity_lambda,
+    )
     return RecommendationResponse(**result)
+
+
+@app.post("/feedback", response_model=FeedbackResponse)
+def submit_user_feedback(request: FeedbackRequest):
+    """
+    Real-Time User Feedback & Implicit Skip Ingestion Endpoint.
+    - Clicks: Appends to real-time user history store.
+    - Skips / Bounces: Penalizes category fatigue to eliminate echo chambers.
+    """
+    eng = get_engine()
+    result = eng.record_feedback(
+        user_id=request.user_id,
+        article_id=request.article_id,
+        event_type=request.event_type,
+        dwell_time_seconds=request.dwell_time_seconds,
+    )
+    return FeedbackResponse(**result)
 
 
 @app.get("/user/{user_id}/history")

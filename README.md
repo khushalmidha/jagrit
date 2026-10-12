@@ -10,6 +10,8 @@ Jagrit is a fully functional, personalized bilingual news platform that combines
 * **AI News Assistant (RAG Pipeline)**: Features a Retrieval-Augmented Generation pipeline using Gemini 1.5 Flash, allowing users to ask natural language questions about the latest news and get context-aware answers directly from the real-time feature store.
 * **Hybrid Feed Layout**: The UI splits the feed into a premium **For You** hero section (top 6 ML-ranked articles) and a **Global News** grid for trending worldwide stories.
 * **Category Filtering**: A sleek sidebar allows users to filter the entire feed by specific topics (Politics, Technology, Business, Sports, etc.).
+* **Echo-Chamber Prevention (MMR Diversity)**: Employs **Maximal Marginal Relevance (MMR)** selection with a tunable tradeoff parameter $\lambda=0.75$, guaranteeing fresh topic coverage across the Top-10 personalized feed.
+* **Implicit Skip & Negative Dwell-Time Ingestion**: Tracks quick bounces (<3s) and implicit skips via a real-time `/feedback` endpoint, applying dynamic category fatigue penalties to eliminate repetitive recommendations.
 * **Saved News Archive**: Users can bookmark their favorite articles and access them later in a dedicated, personalized "Saved News" dashboard.
 * **Zero-Downtime Microservices**: Designed to be deployed across Vercel (Frontend), Render (Backend), and a dedicated VM for the Python ML Engine + Redis.
 
