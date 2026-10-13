@@ -115,8 +115,8 @@ Evaluated on a chronological **80/10/10 split** of Microsoft News Dataset (MIND)
   * **Offline Pipeline Latency (P95, CPU)*:** ~69.00 ms
 * **Maximal Marginal Relevance (MMR, $\lambda^* = 0.75$)**
   * **Diversity Parameter:** $\lambda^* = 0.75$
-  * **nDCG@10:** 0.2768 (relevance preserved)
-  * **Intra-List Diversity (ILD):** 0.77 $\rightarrow$ 0.90 (+16.9% diversity lift)
+  * **nDCG@10:** 0.2768
+  * **Intra-List Diversity (ILD):** 0.77 $\rightarrow$ 0.90 (+16.9% diversity lift while preserving the ensemble's nDCG@10)
 
 *\*Latency scope: Offline recommendation pipeline latency measured on commodity CPU (includes neural forward pass, FAISS candidate inner product, tabular feature construction, tree ranking, and MMR diversification; excludes network transport and external database round-trips).*
 
@@ -124,8 +124,8 @@ Evaluated on a chronological **80/10/10 split** of Microsoft News Dataset (MIND)
 
 The validation-selected ensemble ($\alpha^* = 0.60$, which achieved validation nDCG@10 = 0.3372) did not outperform the standalone Two-Tower model on the temporally isolated test set (test nDCG@10 = 0.2768 vs. Two-Tower test nDCG@10 = 0.2877). 
 
-This highlights:
-- **Chronological distribution shift:** The semantic Two-Tower model generalizes better to unseen breaking news articles than tabular decision trees.
+This gap may reflect chronological distribution shift and degradation of historical popularity/CTR priors:
+- **Chronological distribution shift:** The semantic Two-Tower representations appear to generalize better to unseen breaking news articles than tabular decision trees.
 - **Non-stationary CTR priors:** Historical click signals and popularity counters decay across emerging news cohorts.
 - **Limited generalization of validation-selected ensemble weight:** Blending weights optimal on validation data do not guarantee superior accuracy on future time horizons.
 

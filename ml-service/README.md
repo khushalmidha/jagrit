@@ -133,8 +133,11 @@ Stage 2 LambdaMART uses 8 mathematically deterministic ranking features:
 ## 6. Model Architecture & Mathematical Formulations
 
 ### 1. Multimodal Two-Tower Architecture
-- **Visual Encoder:** Pretrained ResNet-50 feature backbone projecting 2048-dimensional convolutional activations to latent dimension $d=256$:
-  $$\mathbf{v}_i = \mathbf{W}_v \cdot \text{ResNet50}(I_i) + \mathbf{b}_v \in \mathbb{R}^{256}$$
+- **Visual Encoder:** ResNet-50 feature backbone projecting 2048-dimensional convolutional activations to latent dimension $d=256$:
+  $$\mathbf{v}_i = \text{LayerNorm}(\mathbf{W}_v \cdot \text{ResNet50}(I_i) + \mathbf{b}_v) \in \mathbb{R}^{256}$$
+  * *Image Preprocessing Pipeline:* Raw RGB images are resized to $224 \times 224$ and normalized using standard ImageNet parameters ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$).
+  * *Transfer Learning & Freezing Strategy:* Convolutional blocks (`conv1`, `bn1`, `layer1`–`layer4`) are frozen; the 2048-d pooled representation passes into a trainable linear projection head ($\mathbf{W}_v \in \mathbb{R}^{256 \times 2048}$), followed by LayerNorm and Dropout (0.2).
+  * *Offline MIND Benchmark Setting:* Because the official MIND dataset distributes news metadata/text without scraped image binaries, offline reproducible experiments feed deterministic 2048-d category-conditioned pooled feature vectors directly into the trainable projection head, preserving identical downstream representation dimensions and cross-modal gating dynamics without runtime image-scraping dependencies.
 - **NLP Text Encoder:** Multi-Head Self-Attention with $H=4$ heads and projection dimension $d_k=64$:
   $$\mathbf{Q} = \mathbf{X} \mathbf{W}_Q, \quad \mathbf{K} = \mathbf{X} \mathbf{W}_K, \quad \mathbf{V} = \mathbf{X} \mathbf{W}_V$$
   $$\text{Head}_j = \text{softmax}\left(\frac{\mathbf{Q}_j \mathbf{K}_j^\top}{\sqrt{d_k}}\right) \mathbf{V}_j$$
@@ -264,11 +267,14 @@ python scripts/sync_benchmarks_to_readme.py
 ## 13. Limitations & Threats to Validity
 
 ### Validation / Test Generalization Gap Analysis
-The validation-selected ensemble ($\\alpha^* = 0.60$, achieving validation nDCG@10 = 0.3372) did not outperform the standalone Two-Tower model on the temporally isolated test partition (test nDCG@10 = 0.2768 vs. Two-Tower test nDCG@10 = 0.2877). This empirically illustrates:
-- **Temporal Distribution Shift:** Neural semantic embeddings exhibit stronger out-of-distribution generalization to emerging news stories than decision trees fitted on historical tabular priors.
+The validation-selected ensemble ($\alpha^* = 0.60$, achieving validation nDCG@10 = 0.3372) did not outperform the standalone Two-Tower model on the temporally isolated test partition (test nDCG@10 = 0.2768 vs. Two-Tower test nDCG@10 = 0.2877). 
+
+This gap may reflect chronological distribution shift and degradation of historical popularity/CTR priors:
+- **Temporal Distribution Shift:** Neural semantic embeddings appear to exhibit stronger out-of-distribution generalization to emerging news stories than decision trees fitted on historical tabular priors.
 - **Non-Stationary CTR Priors:** Historical item CTR priors decay rapidly as news cohorts age between the training and test time horizons.
 - **Ensemble Generalization Limits:** Blending weights calibrated on validation horizons do not necessarily hold on future temporal splits.
-Rather than post-hoc retuning $\\alpha$ on the test split, preserving this result maintains methodological rigor and scientific defensibility.
+
+Rather than post-hoc retuning $\alpha$ on the test split, preserving this result maintains methodological rigor and scientific defensibility.
 
 
 1. **Subsampled Slices for Offline Feasibility:** Sliced evaluation (3,000 train / 500 val / 500 test sessions) enables deterministic CPU benchmarking within minutes; full 156k session training requires dedicated GPU infrastructure to maintain practical turnaround times.

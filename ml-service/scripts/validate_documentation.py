@@ -26,6 +26,8 @@ FORBIDDEN_LEGACY_PATTERNS = [
     (r"0\.4765", "Legacy visual baseline metric (0.4765)"),
     (r"0\.4318", "Legacy attention baseline metric (0.4318)"),
     (r"0\.1984", "Legacy classification metric (0.1984)"),
+    (r"0\.2520", "Spurious unverified ablation metric (0.2520)"),
+    (r"0\.2701", "Spurious unverified ablation metric (0.2701)"),
     (r"8\.61\s*ms", "Legacy latency claim (8.61 ms)"),
     (r"8\.6\s*ms", "Legacy latency claim (8.6 ms)"),
     (r"0\.66\s*ms", "Legacy sub-millisecond claim (0.66 ms)"),
@@ -103,7 +105,39 @@ def validate_metrics(artifacts: Dict[str, Any]):
         print(f"FAILED: Expected Ensemble nDCG@10 = 0.2768, found {ens_ndcg10}")
         sys.exit(1)
 
-    # 3. Check generalization gap holds true (Two-Tower > Ensemble on test)
+    # 3. Ablation results breakdown
+    variants = ablation_res.get("variants", {})
+    v1_ndcg10 = variants.get("1_TwoTower_TextOnly", {}).get("nDCG@10", 0)
+    v2_ndcg10 = variants.get("2_TwoTower_VisualConcat", {}).get("nDCG@10", 0)
+    v3_ndcg10 = variants.get("3_TwoTower_Full_Gated", {}).get("nDCG@10", 0)
+    v4_ndcg10 = variants.get("4_LambdaMART_Only", {}).get("nDCG@10", 0)
+    v5_ndcg10 = variants.get("5_Ensemble_Locked", {}).get("nDCG@10", 0)
+    v6_ndcg10 = variants.get("6_Ensemble_MMR_Diversity", {}).get("nDCG@10", 0)
+    v6_ild = variants.get("6_Ensemble_MMR_Diversity", {}).get("Intra_List_Diversity", 0)
+
+    if round(v1_ndcg10, 4) != 0.2478:
+        print(f"FAILED: Expected Text-Only nDCG@10 = 0.2478, found {v1_ndcg10}")
+        sys.exit(1)
+    if round(v2_ndcg10, 4) != 0.2810:
+        print(f"FAILED: Expected Visual Concat nDCG@10 = 0.2810, found {v2_ndcg10}")
+        sys.exit(1)
+    if round(v3_ndcg10, 4) != 0.2877:
+        print(f"FAILED: Expected Full Gated nDCG@10 = 0.2877, found {v3_ndcg10}")
+        sys.exit(1)
+    if round(v4_ndcg10, 4) != 0.2616:
+        print(f"FAILED: Expected LambdaMART nDCG@10 = 0.2616, found {v4_ndcg10}")
+        sys.exit(1)
+    if round(v5_ndcg10, 4) != 0.2768:
+        print(f"FAILED: Expected Ensemble nDCG@10 = 0.2768, found {v5_ndcg10}")
+        sys.exit(1)
+    if round(v6_ndcg10, 4) != 0.2768:
+        print(f"FAILED: Expected Ensemble+MMR nDCG@10 = 0.2768, found {v6_ndcg10}")
+        sys.exit(1)
+    if round(v6_ild, 2) != 0.90:
+        print(f"FAILED: Expected MMR ILD = 0.90, found {v6_ild}")
+        sys.exit(1)
+
+    # 4. Check generalization gap holds true (Two-Tower > Ensemble on test)
     if s1_ndcg10 <= ens_ndcg10:
         print("FAILED: Two-Tower test nDCG@10 should exceed Ensemble test nDCG@10 reflecting distribution shift.")
         sys.exit(1)
@@ -176,7 +210,15 @@ def verify_required_statements(repo_root: str):
             print(f"FAILED: {rel} missing explicit Generalization Gap discussion")
             sys.exit(1)
 
-    print("  -> Scientific honesty statements verified in all README files.")
+    # 4. Check that ml-service/README.md contains the exact ablation metrics
+    with open(ml_readme, "r", encoding="utf-8") as f:
+        ml_content = f.read()
+    for abl_val, desc in [("0.2478", "Text-Only base"), ("0.2810", "Visual features"), ("0.2877", "Attention & Gating")]:
+        if abl_val not in ml_content:
+            print(f"FAILED: ml-service/README.md missing ablation metric {abl_val} ({desc})")
+            sys.exit(1)
+
+    print("  -> Scientific honesty statements and ablation metrics verified in all README files.")
 
 
 if __name__ == "__main__":
