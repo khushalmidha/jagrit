@@ -405,12 +405,31 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    run_ablation(
+    if args.config:
+        cfg_path = args.config if os.path.isabs(args.config) else os.path.join(base_dir, args.config)
+        if os.path.exists(cfg_path):
+            import yaml
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            if "checkpoints" in cfg:
+                ckpt_sec = cfg["checkpoints"]
+                args.checkpoint = ckpt_sec.get("two_tower_weights", args.checkpoint)
+                args.vocab = ckpt_sec.get("vocabulary", args.vocab)
+                args.xgb = ckpt_sec.get("lambdamart_model", args.xgb)
+                args.priors = ckpt_sec.get("train_priors", args.priors)
+                args.ensemble_cfg = ckpt_sec.get("ensemble_config", args.ensemble_cfg)
+            if "data" in cfg:
+                args.max_samples = cfg["data"].get("test_samples", args.max_samples)
+
+    from experiments.run_ablation import run_ablation as run_ablation_fn
+    run_ablation_fn(
         checkpoint_path=os.path.join(base_dir, args.checkpoint),
         vocab_path=os.path.join(base_dir, args.vocab),
         xgb_path=os.path.join(base_dir, args.xgb),
         ensemble_cfg_path=os.path.join(base_dir, args.ensemble_cfg),
         priors_path=os.path.join(base_dir, args.priors),
         max_eval_samples=args.max_samples,
-        output_json_path=os.path.join(base_dir, "results", "ablation.json"),
+        output_json_path=os.path.join(base_dir, "results", "ablation_results.json"),
+        output_csv_path=os.path.join(base_dir, "results", "ablation_results.csv"),
     )
+

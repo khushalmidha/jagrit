@@ -1,0 +1,54 @@
+{
+  "dataset_name": "MINDsmall_train",
+  "total_source_impressions": 156965,
+  "mode": "quick",
+  "random_seed": 42,
+  "split_ratios": [
+    0.8,
+    0.1,
+    0.1
+  ],
+  "split_counts": {
+    "train": 3000,
+    "validation": 500,
+    "test": 500
+  },
+  "full_population_counts": {
+    "train": 125572,
+    "validation": 15696,
+    "test": 15697
+  },
+  "timestamp_ranges": {
+    "train": [
+      "2019-11-09 00:00:19",
+      "2019-11-09 06:23:59"
+    ],
+    "validation": [
+      "2019-11-13 20:36:26",
+      "2019-11-13 21:39:17"
+    ],
+    "test": [
+      "2019-11-14 10:45:09",
+      "2019-11-14 10:57:38"
+    ]
+  },
+  "unique_users": {
+    "total_catalog": 50000,
+    "train": 2680,
+    "validation": 475,
+    "test": 489
+  },
+  "unique_articles": {
+    "train": 14809,
+    "validation": 7545,
+    "test": 6938
+  },
+  "leakage_verification": {
+    "train_max_strictly_before_val_min": true,
+    "val_max_strictly_before_test_min": true,
+    "atomic_impression_grouping": true,
+    "pre_impression_history_isolation": true,
+    "leakage_free_confirmed": true
+  },
+  "created_at": "2026-10-13T12:03:08.371528Z"
+}

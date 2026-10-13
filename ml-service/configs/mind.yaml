@@ -7,7 +7,7 @@
 experiment:
   name: "multimodal_twotower_lambdamart_benchmark"
   seed: 42
-  description: "End-to-end training and evaluation of 2-stage multimodal news recommendation pipeline"
+  description: "End-to-end training, validation model selection, and test evaluation of two-stage news recommender"
 
 # ------------------------------------------------------------------------------
 # 1. Dataset & Split Methodology
@@ -20,23 +20,23 @@ data:
   mock_dir: "data/mock"
   use_mock_fallback: false
 
-  # Sequence lengths
-  max_title_len: 20
-  max_history_len: 20
-
-  # Population: 156,966 total sessions (125,572 train, 15,696 val, 15,697 test)
-  # Experiment subsample limits for rapid reproducible execution on standard hardware:
-  subsample_mode: true
+  # Mode: 'quick' for deterministic subsampled experiments (3,000 / 500 / 500)
+  #       'full' for entire dataset population (125,572 / 15,696 / 15,697)
+  mode: "quick"
   train_samples: 3000
   val_samples: 500
   test_samples: 500
 
-  # Temporal split & Leakage Prevention
-  split_strategy: "chronological_temporal_split"
+  # Temporal Split & Leakage Prevention
+  split_strategy: "chronological_atomic_impression_grouping"
   temporal_split_column: "time"
   train_val_test_ratio: [0.8, 0.1, 0.1]
   prevent_future_leakage: true
-  
+
+  # Sequence lengths
+  max_title_len: 20
+  max_history_len: 20
+
   # Negative Sampling Curriculum
   negative_sampling:
     num_negatives: 4
@@ -55,13 +55,17 @@ model:
   temperature: 0.07 # InfoNCE contrastive scaling factor tau
   dropout: 0.2
 
-  # Visual Tower (2048-d visual feature representation)
+  # Visual Tower
   visual:
     backbone: "resnet50"
-    frozen_conv_blocks: true
+    pretrained: true
+    frozen_conv_blocks: true # conv1, bn1, layer1-4 frozen; projection head trained
     input_resolution: [224, 224]
     feature_dim: 2048
-    pretrained: false # Uses deterministic category-conditioned visual representations emulating frozen ResNet-50 features
+    normalization:
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+    offline_fallback: "deterministic_category_conditioned_projection"
 
   # NLP Text Tower
   text:
@@ -91,13 +95,13 @@ training:
   min_lr: 1.0e-6
   warmup_ratio: 0.10
   grad_clip_norm: 1.0
-  mixed_precision: true
+  mixed_precision: true # Automatically activated when CUDA is available (disabled on CPU)
 
 # ------------------------------------------------------------------------------
 # 4. Stage 1 Candidate Generation (Vector Retrieval)
 # ------------------------------------------------------------------------------
 retrieval:
-  index_type: "IndexFlatIP" # Inner Product on normalized vectors = Cosine Sim
+  index_type: "IndexFlatIP" # Inner Product on normalized vectors = Cosine Similarity
   similarity_metric: "cosine"
   top_k_candidates: 50
   dimension: 256
@@ -114,11 +118,14 @@ reranker:
   max_depth: 5
   subsample: 0.8
   colsample_bytree: 0.8
-  num_training_queries: 1000
+  num_training_queries: 1200
+
+  # Bayesian CTR Priors
+  bayesian_ctr:
+    pseudo_counts_m: 10.0
 
   # Ensemble Blending
   ensemble:
-    default_alpha: 0.50 # S_ensemble = alpha * S_TT + (1 - alpha) * S_Reranker
     sweep_alphas: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
 # ------------------------------------------------------------------------------
@@ -142,3 +149,12 @@ checkpoints:
   vocabulary: "checkpoints/word2idx.json"
   lambdamart_model: "checkpoints/lambdamart_ranker.json"
   ensemble_config: "checkpoints/ensemble_config.json"
+  train_priors: "checkpoints/train_feature_priors.json"
+
+results:
+  dir: "results"
+  split_manifest: "results/split_manifest.json"
+  best_validation_config: "results/best_validation_config.json"
+  test_results: "results/test_results.json"
+  ablation_results: "results/ablation_results.json"
+  ablation_csv: "results/ablation_results.csv"

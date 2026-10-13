@@ -1,0 +1,7 @@
+Variant,nDCG@5,nDCG@10,PR_AUC,ROC_AUC,Cohen_Kappa,MRR,Intra_List_Diversity,P50_Latency_ms,P95_Latency_ms,Description
+1_TwoTower_TextOnly,0.1896,0.2478,0.1983,0.4938,-0.0225,0.2166,0.8647,28.15,80.53,Pure text title token representations without visual feature grounding.
+2_TwoTower_VisualConcat,0.2196,0.2810,0.2316,0.5396,0.0242,0.2498,0.7499,25.07,59.50,Linear combination of visual and text features without cross-modal gating.
+3_TwoTower_Full_Gated,0.2210,0.2877,0.2307,0.5461,0.0007,0.2474,0.7708,26.23,65.11,Multi-Head Self-Attention text encoder + 2048-d visual representations with Gated Cross-Modal Fusion.
+4_LambdaMART_Only,0.1963,0.2616,0.2040,0.5207,-0.0348,0.2253,0.7848,2.69,4.24,"Decision tree ranking solely on tabular signals (Bayesian CTR, category affinity, recency decay)."
+5_Ensemble_Locked,0.2083,0.2768,0.2194,0.5358,-0.0099,0.2374,0.7651,29.20,68.09,Calibrated 2-stage ensemble with alpha=0.60 locked from the validation split.
+6_Ensemble_MMR_Diversity,0.2083,0.2768,0.2194,0.5358,-0.0099,0.2374,0.8997,29.80,70.47,"Ensemble blended score with Maximal Marginal Relevance (MMR, lambda=0.75) diversity reranker."

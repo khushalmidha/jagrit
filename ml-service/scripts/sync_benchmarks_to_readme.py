@@ -24,9 +24,9 @@ def generate_ablation_markdown_table(ablation_data: Dict[str, Any]) -> str:
     v4 = variants["4_LambdaMART_Only"]
     v5 = variants["5_Ensemble_Locked"]
     v6 = variants["6_Ensemble_MMR_Diversity"]
-    locked_alpha = ablation_data.get("locked_validation_alpha", 0.70)
+    locked_alpha = ablation_data.get("locked_validation_alpha", 0.50)
 
-    # Calculate percentage gain of v2 over v1, v3 over v2, v5 over v4
+    # Calculate percentage gain of v2 over v1, v3 over v2, v5 over v3
     gain_v2_v1 = ((v2["nDCG@10"] - v1["nDCG@10"]) / max(1e-6, v1["nDCG@10"])) * 100.0
     gain_v3_v2 = ((v3["nDCG@10"] - v2["nDCG@10"]) / max(1e-6, v2["nDCG@10"])) * 100.0
     gain_v5_v3 = ((v5["nDCG@10"] - v3["nDCG@10"]) / max(1e-6, v3["nDCG@10"])) * 100.0
@@ -45,19 +45,47 @@ def generate_ablation_markdown_table(ablation_data: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def generate_test_benchmark_markdown_table(test_data: Dict[str, Any]) -> str:
+    s1 = test_data.get("Stage1_TwoTower", {})
+    s2 = test_data.get("Stage2_LambdaMART", {})
+    ens = test_data.get("Ensemble_Locked", {})
+    mmr = test_data.get("Ensemble_MMR", {})
+    alpha = test_data.get("locked_alpha", 0.50)
+    lam = test_data.get("locked_mmr_lambda", 0.75)
+
+    lines = [
+        "| Architecture Component | nDCG@5 | nDCG@10 | MRR | ROC-AUC | PR-AUC | Cohen's $\\kappa$ | P50 (ms) | P95 (ms) |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+        f"| **Stage 1: Two-Tower (PyTorch)** | {s1.get('nDCG@5', 0):.4f} | {s1.get('nDCG@10', 0):.4f} | {s1.get('MRR', 0):.4f} | {s1.get('ROC-AUC', 0):.4f} | {s1.get('PR-AUC', 0):.4f} | {s1.get('Cohen_Kappa', 0):.4f} | {s1.get('P50_Latency_ms', 0):.2f} | {s1.get('P95_Latency_ms', 0):.2f} |",
+        f"| **Stage 2: LambdaMART (XGBoost)** | {s2.get('nDCG@5', 0):.4f} | {s2.get('nDCG@10', 0):.4f} | {s2.get('MRR', 0):.4f} | {s2.get('ROC-AUC', 0):.4f} | {s2.get('PR-AUC', 0):.4f} | {s2.get('Cohen_Kappa', 0):.4f} | {s2.get('P50_Latency_ms', 0):.2f} | {s2.get('P95_Latency_ms', 0):.2f} |",
+        f"| **Ensemble (Locked $\\alpha = {alpha:.2f}$)** | **{ens.get('nDCG@5', 0):.4f}** | **{ens.get('nDCG@10', 0):.4f}** | **{ens.get('MRR', 0):.4f}** | **{ens.get('ROC-AUC', 0):.4f}** | **{ens.get('PR-AUC', 0):.4f}** | **{ens.get('Cohen_Kappa', 0):.4f}** | {ens.get('P50_Latency_ms', 0):.2f} | {ens.get('P95_Latency_ms', 0):.2f} |",
+        f"| **Ensemble + MMR ($\\lambda = {lam:.2f}$)** | {mmr.get('nDCG@5', 0):.4f} | {mmr.get('nDCG@10', 0):.4f} | {mmr.get('MRR', 0):.4f} | {mmr.get('ROC-AUC', 0):.4f} | {mmr.get('PR-AUC', 0):.4f} | {mmr.get('Cohen_Kappa', 0):.4f} | {mmr.get('P50_Latency_ms', 0):.2f} | {mmr.get('P95_Latency_ms', 0):.2f} |",
+    ]
+    return "\n".join(lines)
+
+
 def update_readme_files(base_dir: str):
     results_dir = os.path.join(base_dir, "results")
-    ablation_json_path = os.path.join(results_dir, "ablation.json")
+    ablation_json_path = os.path.join(results_dir, "ablation_results.json")
+    if not os.path.exists(ablation_json_path):
+        ablation_json_path = os.path.join(results_dir, "ablation.json")
+
+    test_json_path = os.path.join(results_dir, "test_results.json")
 
     if not os.path.exists(ablation_json_path):
-        logger.error(f"Cannot find {ablation_json_path}")
+        logger.error(f"Cannot find ablation results at {ablation_json_path}")
         return
 
     with open(ablation_json_path, "r", encoding="utf-8") as f:
         ablation_data = json.load(f)
 
-    new_table = generate_ablation_markdown_table(ablation_data)
-    locked_alpha = ablation_data.get("locked_validation_alpha", 0.70)
+    test_data = {}
+    if os.path.exists(test_json_path):
+        with open(test_json_path, "r", encoding="utf-8") as f:
+            test_data = json.load(f)
+
+    new_ablation_table = generate_ablation_markdown_table(ablation_data)
+    locked_alpha = ablation_data.get("locked_validation_alpha", 0.50)
     v5 = ablation_data["variants"]["5_Ensemble_Locked"]
 
     # Target READMEs
@@ -73,17 +101,23 @@ def update_readme_files(base_dir: str):
         # Replace Ablation Table
         pattern = r"\| Model / Architecture Variant \| nDCG@5 \|.*?\n(?:\| .*? \|\n)+"
         if re.search(pattern, content):
-            content = re.sub(pattern, lambda _: new_table + "\n", content, flags=re.DOTALL)
+            content = re.sub(pattern, lambda _: new_ablation_table + "\n", content, flags=re.DOTALL)
             logger.info(f"Replaced Ablation table in {path}")
         else:
-            # Also try matching Variant / Configuration table in root README
             pattern_root = r"\| Variant / Configuration \| nDCG@5 \|.*?\n(?:\| .*? \|\n)+"
             if re.search(pattern_root, content):
-                content = re.sub(pattern_root, lambda _: new_table + "\n", content, flags=re.DOTALL)
+                content = re.sub(pattern_root, lambda _: new_ablation_table + "\n", content, flags=re.DOTALL)
                 logger.info(f"Replaced Variant table in {path}")
 
-        # Update any alpha references and nDCG claims in text
-        # e.g., 0.6073 nDCG@10 or alpha = 0.50
+        # Replace Test Benchmark Table if present
+        if test_data:
+            new_test_table = generate_test_benchmark_markdown_table(test_data)
+            test_table_pattern = r"\| Architecture Component \| nDCG@5 \|.*?\n(?:\| .*? \|\n)+"
+            if re.search(test_table_pattern, content):
+                content = re.sub(test_table_pattern, lambda _: new_test_table + "\n", content, flags=re.DOTALL)
+                logger.info(f"Replaced Test Benchmark table in {path}")
+
+        # Update alpha references and nDCG claims in text
         content = re.sub(r"optimal α = 0\.\d+", f"optimal α = {locked_alpha:.2f}", content)
         content = re.sub(r"optimal alpha = 0\.\d+", f"optimal alpha = {locked_alpha:.2f}", content)
         content = re.sub(r"Optimal α = 0\.\d+", f"Optimal α = {locked_alpha:.2f}", content)

@@ -1,0 +1,100 @@
+{
+  "protocol": "Chronological Validation Split Hyperparameter Selection",
+  "validation_samples_evaluated": 500,
+  "timestamp": "2026-10-13 12:11:58 UTC",
+  "optimal_alpha_two_tower": 0.6,
+  "optimal_alpha_lambdamart": 0.4,
+  "optimal_mmr_lambda": 0.75,
+  "validation_best_ndcg10": 0.3371956508370286,
+  "validation_best_mrr": 0.3015241116066395,
+  "alpha_sweep": [
+    {
+      "alpha_two_tower": 0.0,
+      "alpha_lambdamart": 1.0,
+      "val_ndcg10": 0.3352,
+      "val_mrr": 0.2899
+    },
+    {
+      "alpha_two_tower": 0.1,
+      "alpha_lambdamart": 0.9,
+      "val_ndcg10": 0.3324,
+      "val_mrr": 0.2888
+    },
+    {
+      "alpha_two_tower": 0.2,
+      "alpha_lambdamart": 0.8,
+      "val_ndcg10": 0.3328,
+      "val_mrr": 0.2911
+    },
+    {
+      "alpha_two_tower": 0.3,
+      "alpha_lambdamart": 0.7,
+      "val_ndcg10": 0.3334,
+      "val_mrr": 0.2933
+    },
+    {
+      "alpha_two_tower": 0.4,
+      "alpha_lambdamart": 0.6,
+      "val_ndcg10": 0.3364,
+      "val_mrr": 0.2967
+    },
+    {
+      "alpha_two_tower": 0.5,
+      "alpha_lambdamart": 0.5,
+      "val_ndcg10": 0.337,
+      "val_mrr": 0.3
+    },
+    {
+      "alpha_two_tower": 0.6,
+      "alpha_lambdamart": 0.4,
+      "val_ndcg10": 0.3372,
+      "val_mrr": 0.3015
+    },
+    {
+      "alpha_two_tower": 0.7,
+      "alpha_lambdamart": 0.3,
+      "val_ndcg10": 0.3349,
+      "val_mrr": 0.2985
+    },
+    {
+      "alpha_two_tower": 0.8,
+      "alpha_lambdamart": 0.2,
+      "val_ndcg10": 0.3307,
+      "val_mrr": 0.294
+    },
+    {
+      "alpha_two_tower": 0.9,
+      "alpha_lambdamart": 0.1,
+      "val_ndcg10": 0.3266,
+      "val_mrr": 0.2891
+    },
+    {
+      "alpha_two_tower": 1.0,
+      "alpha_lambdamart": 0.0,
+      "val_ndcg10": 0.3275,
+      "val_mrr": 0.2881
+    }
+  ],
+  "mmr_sweep": [
+    {
+      "diversity_lambda": 0.25,
+      "val_ndcg10": 0.3372,
+      "val_intra_list_diversity": 0.9179
+    },
+    {
+      "diversity_lambda": 0.5,
+      "val_ndcg10": 0.3372,
+      "val_intra_list_diversity": 0.9179
+    },
+    {
+      "diversity_lambda": 0.75,
+      "val_ndcg10": 0.3372,
+      "val_intra_list_diversity": 0.8325
+    },
+    {
+      "diversity_lambda": 1.0,
+      "val_ndcg10": 0.3372,
+      "val_intra_list_diversity": 0.706
+    }
+  ]
+}
