@@ -408,6 +408,7 @@ def evaluate_pipeline(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate News Recommender Metrics")
+    parser.add_argument("--config", type=str, default="", help="Path to YAML config file (e.g. configs/mind.yaml)")
     parser.add_argument("--checkpoint", type=str, default="checkpoints/two_tower_best.pt")
     parser.add_argument("--vocab", type=str, default="checkpoints/word2idx.json")
     parser.add_argument("--xgb", type=str, default="checkpoints/lambdamart_ranker.json")
@@ -415,6 +416,24 @@ if __name__ == "__main__":
     parser.add_argument("--use_mock", action="store_true", help="Use mock MIND dataset for fast evaluation")
     parser.add_argument("--max_samples", type=int, default=500)
     args = parser.parse_args()
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if args.config:
+        cfg_path = args.config if os.path.isabs(args.config) else os.path.join(base_dir, args.config)
+        if os.path.exists(cfg_path):
+            import yaml
+            logger.info(f"Loading evaluation parameters from {cfg_path}...")
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            if "checkpoints" in cfg:
+                ckpt_section = cfg["checkpoints"]
+                args.checkpoint = ckpt_section.get("two_tower_weights", args.checkpoint)
+                args.vocab = ckpt_section.get("vocabulary", args.vocab)
+                args.xgb = ckpt_section.get("lambdamart_model", args.xgb)
+            if "data" in cfg:
+                args.max_samples = cfg["data"].get("test_samples", args.max_samples)
+                if cfg["data"].get("raw_dir"):
+                    args.data_dir = os.path.join(base_dir, cfg["data"]["raw_dir"])
 
     evaluate_pipeline(
         checkpoint_path=args.checkpoint,

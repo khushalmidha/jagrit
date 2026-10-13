@@ -1,0 +1,142 @@
+# ==============================================================================
+# Jagrit: Multimodal Two-Stage News Recommendation System Configuration
+# Dataset: Microsoft News Dataset (MIND)
+# Standard: Amazon Applied Scientist / Tier-1 RecSys Benchmark Specification
+# ==============================================================================
+
+experiment:
+  name: "multimodal_twotower_lambdamart_benchmark"
+  seed: 42
+  description: "End-to-end training and evaluation of 2-stage multimodal news recommendation pipeline"
+
+# ------------------------------------------------------------------------------
+# 1. Dataset & Split Methodology
+# ------------------------------------------------------------------------------
+data:
+  dataset_name: "MINDsmall_train"
+  raw_dir: "data/raw/MINDsmall_train"
+  news_path: "data/raw/MINDsmall_train/news.tsv"
+  behaviors_path: "data/raw/MINDsmall_train/behaviors.tsv"
+  mock_dir: "data/mock"
+  use_mock_fallback: false
+
+  # Sequence lengths
+  max_title_len: 20
+  max_history_len: 20
+
+  # Sample limits (set -1 or null for full dataset)
+  train_samples: 3000
+  val_samples: 500
+  test_samples: 500
+
+  # Temporal split & Leakage Prevention
+  split_strategy: "temporal_impression_grouping"
+  temporal_split_column: "time"
+  train_val_test_ratio: [0.8, 0.1, 0.1]
+  prevent_future_leakage: true
+  
+  # Negative Sampling Curriculum
+  negative_sampling:
+    num_negatives: 4
+    strategy: "balanced_curriculum" # 50% hard in-session unclicked + 50% exploratory
+    hard_ratio: 0.50
+    exploratory_ratio: 0.50
+
+# ------------------------------------------------------------------------------
+# 2. Stage 1: Multimodal Two-Tower Architecture
+# ------------------------------------------------------------------------------
+model:
+  d_model: 256
+  d_emb: 256
+  num_heads: 4
+  d_k: 64
+  temperature: 0.07 # InfoNCE contrastive scaling factor tau
+  dropout: 0.2
+
+  # Visual Tower
+  visual:
+    backbone: "resnet50"
+    frozen_conv_blocks: true
+    input_resolution: [224, 224]
+    feature_dim: 2048
+    pretrained: false
+
+  # NLP Text Tower
+  text:
+    encoder_type: "multihead_self_attention"
+    pooling: "additive_word_attention"
+    max_vocab_size: 50000
+
+  # Cross-Modal Fusion
+  fusion:
+    gating_enabled: true
+    activation: "sigmoid"
+
+  # User Representation Tower
+  user:
+    inter_article_attention: true
+    pooling: "additive_history_attention"
+
+# ------------------------------------------------------------------------------
+# 3. Stage 1 Optimization & Training Hyperparameters
+# ------------------------------------------------------------------------------
+training:
+  epochs: 2
+  batch_size: 64
+  optimizer: "AdamW"
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  min_lr: 1.0e-6
+  warmup_ratio: 0.10
+  grad_clip_norm: 1.0
+  mixed_precision: true
+
+# ------------------------------------------------------------------------------
+# 4. Stage 1 Candidate Generation (Vector Retrieval)
+# ------------------------------------------------------------------------------
+retrieval:
+  index_type: "IndexFlatIP" # Inner Product on normalized vectors = Cosine Sim
+  similarity_metric: "cosine"
+  top_k_candidates: 50
+  dimension: 256
+
+# ------------------------------------------------------------------------------
+# 5. Stage 2: Feature Engineering & XGBoost LambdaMART Reranker
+# ------------------------------------------------------------------------------
+reranker:
+  model_type: "XGBRanker"
+  objective: "rank:ndcg"
+  eval_metric: "ndcg@10"
+  n_estimators: 100
+  learning_rate: 0.05
+  max_depth: 5
+  subsample: 0.8
+  colsample_bytree: 0.8
+  num_training_queries: 1000
+
+  # Ensemble Blending
+  ensemble:
+    default_alpha: 0.50 # S_ensemble = alpha * S_TT + (1 - alpha) * S_Reranker
+    sweep_alphas: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
+# ------------------------------------------------------------------------------
+# 6. Diversity & Serving Policy
+# ------------------------------------------------------------------------------
+serving:
+  enable_diversity: true
+  diversity_algorithm: "MaximalMarginalRelevance"
+  diversity_lambda: 0.75 # Tradeoff: 1.0 = Pure relevance, 0.0 = Pure diversity
+  target_p95_latency_ms: 40.0
+  negative_feedback_decay: 0.15
+
+# ------------------------------------------------------------------------------
+# 7. Checkpoints & Artifact Storage
+# ------------------------------------------------------------------------------
+checkpoints:
+  dir: "checkpoints"
+  two_tower_weights: "checkpoints/two_tower_best.pt"
+  faiss_index: "checkpoints/faiss_index.bin"
+  article_ids_map: "checkpoints/article_ids.json"
+  vocabulary: "checkpoints/word2idx.json"
+  lambdamart_model: "checkpoints/lambdamart_ranker.json"
+  ensemble_config: "checkpoints/ensemble_config.json"

@@ -390,6 +390,7 @@ def train_stage2_xgboost_ranker(
 
 def run_pipeline():
     parser = argparse.ArgumentParser(description="Multimodal Two-Tower + XGBoost News Recommender Training Pipeline")
+    parser.add_argument("--config", type=str, default="", help="Path to YAML config file (e.g. configs/mind.yaml)")
     parser.add_argument("--epochs", type=int, default=1, help="Stage 1 training epochs")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
@@ -404,8 +405,29 @@ def run_pipeline():
     checkpoints_dir = os.path.join(base_dir, "checkpoints")
     os.makedirs(checkpoints_dir, exist_ok=True)
 
+    # Load from YAML config if provided
+    if args.config:
+        cfg_path = args.config if os.path.isabs(args.config) else os.path.join(base_dir, args.config)
+        if os.path.exists(cfg_path):
+            import yaml
+            logger.info(f"Loading configuration from {cfg_path}...")
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            if "training" in cfg:
+                args.epochs = cfg["training"].get("epochs", args.epochs)
+                args.batch_size = cfg["training"].get("batch_size", args.batch_size)
+                args.lr = float(cfg["training"].get("learning_rate", args.lr))
+            if "model" in cfg:
+                args.d_model = cfg["model"].get("d_model", args.d_model)
+                args.num_heads = cfg["model"].get("num_heads", args.num_heads)
+            if "data" in cfg:
+                if cfg["data"].get("train_samples"):
+                    args.max_samples = cfg["data"]["train_samples"]
+                if cfg["data"].get("raw_dir"):
+                    args.data_dir = os.path.join(base_dir, cfg["data"]["raw_dir"])
+
     # Determine data paths
-    raw_dir = os.path.join(base_dir, "data", "raw", "MINDsmall_train")
+    raw_dir = args.data_dir if args.data_dir else os.path.join(base_dir, "data", "raw", "MINDsmall_train")
     if not args.use_mock and os.path.exists(os.path.join(raw_dir, "news.tsv")) and os.path.exists(os.path.join(raw_dir, "behaviors.tsv")):
         news_path = os.path.join(raw_dir, "news.tsv")
         behaviors_path = os.path.join(raw_dir, "behaviors.tsv")
