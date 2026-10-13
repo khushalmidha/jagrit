@@ -204,12 +204,14 @@ Model tuning was performed strictly on the **Validation** partition across candi
 
 Evaluated strictly on the **Untouched Test Partition** (500 chronological impression sessions) using frozen validation hyperparameters ($\alpha^* = 0.60, \lambda^* = 0.75$):
 
-| Architecture Component | nDCG@5 | nDCG@10 | MRR | ROC-AUC | PR-AUC | Cohen's $\kappa$ | P50 (ms) | P95 (ms) |
+| Architecture Component | nDCG@10 | nDCG@5 | MRR | Topic Diversity (ILD) | P50 (ms) | P95 (ms) | PR-AUC | ROC-AUC |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Stage 1: Two-Tower (PyTorch)** | 0.2210 | 0.2877 | 0.2474 | 0.5461 | 0.2307 | 0.0007 | 28.09 | 65.00 |
-| **Stage 2: LambdaMART (XGBoost)** | 0.1963 | 0.2616 | 0.2253 | 0.5207 | 0.2040 | -0.0348 | 2.63 | 4.09 |
-| **Ensemble (Locked $\alpha = 0.60$)** | **0.2083** | **0.2768** | **0.2374** | **0.5358** | **0.2194** | **-0.0099** | 30.58 | 69.00 |
-| **Ensemble + MMR ($\lambda = 0.75$)** | 0.2083 | 0.2768 | 0.2374 | 0.5358 | 0.2194 | -0.0099 | 30.98 | 69.95 |
+| **Stage 1: Two-Tower (PyTorch)** | **0.2877** | **0.2210** | **0.2474** | 0.77 | 28.09 | 65.00 | **0.2307** | **0.5461** |
+| **Stage 2: LambdaMART (XGBoost)** | 0.2616 | 0.1963 | 0.2253 | 0.78 | **2.63** | **4.09** | 0.2040 | 0.5207 |
+| **Frozen Ensemble ($\alpha = 0.60$)** | 0.2768 | 0.2083 | 0.2374 | 0.77 | 30.58 | 69.00 | 0.2194 | 0.5358 |
+| **Ensemble + MMR ($\lambda = 0.75$)** | 0.2768 | 0.2083 | 0.2374 | **0.89** | 30.98 | 69.95 | 0.2194 | 0.5358 |
+
+*\*Cohen's $\kappa$ Context: Measures chance-corrected inter-rater agreement between model top-1 predictions and ground truth clicks. Near-zero and negative values are expected in implicit click recommendation due to severe class imbalance (~4% CTR prior) and threshold calibration boundaries; nDCG and MRR are the standard ground truth ranking metrics.*
 
 ---
 
@@ -217,20 +219,20 @@ Evaluated strictly on the **Untouched Test Partition** (500 chronological impres
 
 Evaluated across all 6 variants on identical test impressions:
 
-| Model / Architecture Variant | nDCG@5 | nDCG@10 | PR-AUC | ROC-AUC | Cohen's Kappa ($\kappa$) | MRR | Topic Diversity (ILD) | P95 Latency | Scientific Contribution / Rationale |
+| Model / Architecture Variant | nDCG@10 | nDCG@5 | MRR | Topic Diversity (ILD) | P95 Latency (CPU) | PR-AUC | ROC-AUC | Cohen's $\kappa$ | Scientific Rationale & Observations |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **1. Two-Tower (Text-Only Base)** | 0.1896 | 0.2478 | 0.1983 | 0.4938 | -0.0225 | 0.2166 | 0.86 | **80.53 ms** | Pure text title token representations. Lacks visual grounding. |
-| **2. Two-Tower + Visual Features** | 0.2196 | 0.2810 | 0.2316 | 0.5396 | 0.0242 | 0.2498 | 0.75 | 59.50 ms | **+13.4% nDCG@10 gain**: Visual features disambiguate short and ambiguous breaking news headlines. |
-| **3. Two-Tower + Attention & Gating** | 0.2210 | 0.2877 | 0.2307 | 0.5461 | 0.0007 | 0.2474 | 0.77 | 65.11 ms | **+2.4% nDCG@10 gain**: MHA captures word semantics; Gated Cross-Modal Fusion dynamically balances channel confidence. |
-| **4. Stage 2: LambdaMART Only** | 0.1963 | 0.2616 | 0.2040 | 0.5207 | -0.0348 | 0.2253 | 0.78 | 4.24 ms | Decision trees split on tabular signals (Bayesian CTR, category affinities, recency decay) missed by embeddings. |
-| **5. Full 2-Stage Ensemble ($\alpha = 0.60$)** | **0.2083** | **0.2768** | **0.2194** | **0.5358** | **-0.0099** | **0.2374** | 0.77 | 68.09 ms | **+-3.8% nDCG@10 synergistic lift**: Combines dense semantic retrieval with non-linear tabular decision trees. |
-| **6. Ensemble + MMR Diversity ($\lambda = 0.75$)** | 0.2083 | 0.2768 | 0.2194 | 0.5358 | -0.0099 | 0.2374 | **0.90** | 70.47 ms | **+17.6% diversity lift**: Breaks filter bubbles and delivers balanced category representation. |
+| **1. Two-Tower (Text-Only Base)** | 0.2478 | 0.1896 | 0.2166 | 0.86 | 80.53 ms | 0.1983 | 0.4938 | -0.0225 | Pure text title token representations without visual feature grounding. |
+| **2. Two-Tower + Visual Features** | 0.2810 | 0.2196 | 0.2498 | 0.75 | 59.50 ms | 0.2316 | 0.5396 | 0.0242 | **+13.4% nDCG@10 gain**: Visual features disambiguate short breaking news headlines. |
+| **3. Two-Tower + Attention & Gating** | **0.2877** | **0.2210** | **0.2474** | 0.77 | 65.11 ms | **0.2307** | **0.5461** | 0.0007 | **+2.4% nDCG@10 gain**: MHA captures semantics; Gated Fusion dynamically balances channels. Highest test relevance. |
+| **4. Stage 2: LambdaMART Only** | 0.2616 | 0.1963 | 0.2253 | 0.78 | **4.24 ms** | 0.2040 | 0.5207 | -0.0348 | Decision trees split on tabular priors (Bayesian CTR, affinity, recency). Lowest latency. |
+| **5. Full 2-Stage Ensemble ($\alpha = 0.60$)** | 0.2768 | 0.2083 | 0.2374 | 0.77 | 68.09 ms | 0.2194 | 0.5358 | -0.0099 | The validation-selected ensemble did not outperform standalone Two-Tower on the test set, highlighting distribution shift and limited generalization of tabular priors. |
+| **6. Ensemble + MMR Diversity ($\lambda = 0.75$)** | 0.2768 | 0.2083 | 0.2374 | **0.90** | 70.47 ms | 0.2194 | 0.5358 | -0.0099 | **+17.6% diversity lift**: Breaks filter bubbles by penalizing redundant categories. |
 
 ---
 
 ## 11. Inference Latency & System Benchmark
 
-All latency measurements recorded during single-pass test evaluation on commodity CPU hardware:
+Measured Scope: Offline recommendation pipeline latency on commodity CPU (Intel 12-core, Windows 11). Includes PyTorch neural forward pass, FAISS inner-product vector search, deterministic tabular ranking feature extraction, XGBoost LambdaMART tree evaluation, and greedy MMR diversification. Excludes network HTTP transport latency and external database round-trips.
 - **FAISS Candidate Retrieval:** < 1.0 ms across 14,808 candidate news vectors.
 - **Stage 1 Neural Forward Pass:** P50 = 28.09 ms, P95 = 65.00 ms.
 - **Stage 2 LambdaMART Inference:** P50 = 2.63 ms, P95 = 4.09 ms.
@@ -260,6 +262,14 @@ python scripts/sync_benchmarks_to_readme.py
 ---
 
 ## 13. Limitations & Threats to Validity
+
+### Validation / Test Generalization Gap Analysis
+The validation-selected ensemble ($\\alpha^* = 0.60$, achieving validation nDCG@10 = 0.3372) did not outperform the standalone Two-Tower model on the temporally isolated test partition (test nDCG@10 = 0.2768 vs. Two-Tower test nDCG@10 = 0.2877). This empirically illustrates:
+- **Temporal Distribution Shift:** Neural semantic embeddings exhibit stronger out-of-distribution generalization to emerging news stories than decision trees fitted on historical tabular priors.
+- **Non-Stationary CTR Priors:** Historical item CTR priors decay rapidly as news cohorts age between the training and test time horizons.
+- **Ensemble Generalization Limits:** Blending weights calibrated on validation horizons do not necessarily hold on future temporal splits.
+Rather than post-hoc retuning $\\alpha$ on the test split, preserving this result maintains methodological rigor and scientific defensibility.
+
 
 1. **Subsampled Slices for Offline Feasibility:** Sliced evaluation (3,000 train / 500 val / 500 test sessions) enables deterministic CPU benchmarking within minutes; full 156k session training requires dedicated GPU infrastructure to maintain practical turnaround times.
 2. **Offline Logged Observational Bias:** Evaluation is constrained to logged user interactions. Articles not shown in legacy logging cannot receive user clicks, introducing exposure bias.

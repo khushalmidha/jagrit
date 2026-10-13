@@ -411,7 +411,7 @@ def evaluate_split(
     # BRANCH B: TEST EVALUATION (SINGLE-PASS WITH FROZEN CONFIG)
     # --------------------------------------------------------------------------
     # Resolve locked parameters
-    locked_alpha = 0.50
+    locked_alpha = 0.60
     locked_lambda = 0.75
 
     # Check potential sources for frozen config
@@ -429,11 +429,11 @@ def evaluate_split(
     if resolved_path:
         with open(resolved_path, "r", encoding="utf-8") as f:
             cfg = json.load(f)
-        locked_alpha = float(cfg.get("optimal_alpha_two_tower", 0.50))
+        locked_alpha = float(cfg.get("optimal_alpha_two_tower", 0.60))
         locked_lambda = float(cfg.get("optimal_mmr_lambda", 0.75))
         logger.info(f"Loaded FROZEN config from {resolved_path}: locked_alpha={locked_alpha:.2f}, locked_lambda={locked_lambda:.2f}")
     else:
-        logger.warning("No frozen validation config found! Defaulting to alpha=0.50, lambda=0.75.")
+        logger.warning("No frozen validation config found! Defaulting to alpha=0.60, lambda=0.75.")
 
     s1_metrics = {"ndcg5": [], "ndcg10": [], "mrr": [], "auc": [], "prauc": [], "kappa": [], "latencies": []}
     s2_metrics = {"ndcg5": [], "ndcg10": [], "mrr": [], "auc": [], "prauc": [], "kappa": [], "latencies": []}
