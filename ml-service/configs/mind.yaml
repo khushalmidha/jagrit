@@ -1,7 +1,7 @@
 # ==============================================================================
 # Jagrit: Multimodal Two-Stage News Recommendation System Configuration
 # Dataset: Microsoft News Dataset (MIND)
-# Standard: Amazon Applied Scientist / Tier-1 RecSys Benchmark Specification
+# Protocol: Research-Grade Reproducible Offline Evaluation Configuration
 # ==============================================================================
 
 experiment:
@@ -24,13 +24,15 @@ data:
   max_title_len: 20
   max_history_len: 20
 
-  # Sample limits (set -1 or null for full dataset)
+  # Population: 156,966 total sessions (125,572 train, 15,696 val, 15,697 test)
+  # Experiment subsample limits for rapid reproducible execution on standard hardware:
+  subsample_mode: true
   train_samples: 3000
   val_samples: 500
   test_samples: 500
 
   # Temporal split & Leakage Prevention
-  split_strategy: "temporal_impression_grouping"
+  split_strategy: "chronological_temporal_split"
   temporal_split_column: "time"
   train_val_test_ratio: [0.8, 0.1, 0.1]
   prevent_future_leakage: true
@@ -53,13 +55,13 @@ model:
   temperature: 0.07 # InfoNCE contrastive scaling factor tau
   dropout: 0.2
 
-  # Visual Tower
+  # Visual Tower (2048-d visual feature representation)
   visual:
     backbone: "resnet50"
     frozen_conv_blocks: true
     input_resolution: [224, 224]
     feature_dim: 2048
-    pretrained: false
+    pretrained: false # Uses deterministic category-conditioned visual representations emulating frozen ResNet-50 features
 
   # NLP Text Tower
   text:

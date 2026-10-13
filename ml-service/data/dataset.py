@@ -142,8 +142,8 @@ class MINDMultimodalDataset(Dataset):
 
     def __init__(
         self,
-        behaviors_path: str,
-        news_path: str,
+        behaviors_path: Optional[str] = None,
+        news_path: str = "",
         tokenizer: Optional[SimpleTokenizer] = None,
         max_title_len: int = 20,
         max_history_len: int = 20,
@@ -153,6 +153,7 @@ class MINDMultimodalDataset(Dataset):
         image_tensor_cache: Optional[Dict[str, torch.Tensor]] = None,
         precompute_visual_features: bool = True,
         max_samples: Optional[int] = None,
+        behaviors_df: Optional[pd.DataFrame] = None,
     ):
         super().__init__()
         self.max_title_len = max_title_len
@@ -165,10 +166,16 @@ class MINDMultimodalDataset(Dataset):
 
         # 1. Load Behavior Logs
         behavior_cols = ["impression_id", "user_id", "time", "history", "impressions"]
-        if max_samples:
+        if behaviors_df is not None:
+            df_behaviors = behaviors_df.copy().reset_index(drop=True)
+            if max_samples:
+                df_behaviors = df_behaviors.iloc[:max_samples]
+        elif behaviors_path and max_samples:
             df_behaviors = pd.read_csv(behaviors_path, sep="\t", header=None, names=behavior_cols, nrows=max_samples)
-        else:
+        elif behaviors_path:
             df_behaviors = pd.read_csv(behaviors_path, sep="\t", header=None, names=behavior_cols)
+        else:
+            raise ValueError("Either behaviors_path or behaviors_df must be provided.")
 
         # Collect active news IDs referenced in behaviors
         active_news_ids = set()
@@ -278,6 +285,16 @@ class MINDMultimodalDataset(Dataset):
             imp_id = str(row["impression_id"])
             user_id = str(row["user_id"])
             time_str = str(row["time"]) if pd.notna(row["time"]) else ""
+            if "datetime" in row and pd.notna(row["datetime"]):
+                t_epoch = float(row["datetime"].timestamp())
+            elif time_str:
+                try:
+                    t_epoch = float(pd.to_datetime(time_str, format="%m/%d/%Y %I:%M:%S %p").timestamp())
+                except Exception:
+                    t_epoch = 0.0
+            else:
+                t_epoch = 0.0
+
             history_str = str(row["history"]) if pd.notna(row["history"]) else ""
             impressions_str = str(row["impressions"]) if pd.notna(row["impressions"]) else ""
 
@@ -342,6 +359,7 @@ class MINDMultimodalDataset(Dataset):
                         "impression_id": imp_id,
                         "user_id": user_id,
                         "time": time_str,
+                        "timestamp": t_epoch,
                         "history": history,
                         "positive": pos,
                         "negatives": sampled_negatives,
@@ -360,6 +378,7 @@ class MINDMultimodalDataset(Dataset):
                         "impression_id": imp_id,
                         "user_id": user_id,
                         "time": time_str,
+                        "timestamp": t_epoch,
                         "history": history,
                         "candidates": cand_ids,
                         "labels": cand_labels,
@@ -431,6 +450,7 @@ class MINDMultimodalDataset(Dataset):
                 "candidate_images": cand_images,
                 "labels": labels,
                 "time": item["time"],
+                "timestamp": item.get("timestamp", 0.0),
             }
 
 

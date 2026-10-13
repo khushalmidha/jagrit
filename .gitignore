@@ -21,6 +21,8 @@ dist/
 
 # DL Data and Checkpoints
 ml-service/data/raw/
+ml-service/data/processed/
+*.feather
 ml-service/dl/data/*.zip
 ml-service/dl/data/*.txt
 ml-service/dl/data/*.npy

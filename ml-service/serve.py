@@ -23,6 +23,8 @@ import xgboost as xgb
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from data.split import extract_ranking_features
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -135,7 +137,7 @@ class RecommenderEngine:
             logger.info("Initializing lightweight fallback XGBoost ranker...")
             self._create_fallback_xgb()
 
-        # 4. Load Optimal Ensemble Weight
+        # 4. Load Optimal Ensemble Weight & Feature Priors
         config_path = os.path.join(self.checkpoints_dir, "ensemble_config.json")
         if os.path.exists(config_path):
             with open(config_path, "r", encoding="utf-8") as f:
@@ -143,6 +145,14 @@ class RecommenderEngine:
         else:
             self.ensemble_alpha = 0.70
         logger.info(f"Ensemble Reranker initialized with optimal alpha = {self.ensemble_alpha:.2f}")
+
+        priors_path = os.path.join(self.checkpoints_dir, "train_feature_priors.json")
+        if os.path.exists(priors_path):
+            with open(priors_path, "r", encoding="utf-8") as f:
+                self.train_priors = json.load(f)
+            logger.info("Loaded train feature priors into serving engine.")
+        else:
+            self.train_priors = {}
 
         logger.info(
             f"Engine initialized with {len(self.article_ids)} articles in FAISS, "
@@ -364,23 +374,36 @@ class RecommenderEngine:
             sim = float(stage1_sims[rank_idx])
             cat_affinity = cat_counts.get(meta["category"], 0) / float(num_hist)
             subcat_affinity = subcat_counts.get(meta["subcategory"], 0) / float(num_hist)
-            exp_decay = math.exp(-12.0 / 24.0)
-            imps = self.article_impressions_prior.get(cid, 100)
-            clicks = int(imps * self.article_ctr_prior.get(cid, 0.05))
-            bayesian_ctr = (clicks + 5.0) / float(imps + 100.0)
-            popularity = math.log1p(imps)
-            cross_term = sim * cat_affinity
 
-            feature_matrix.append([
-                sim,
-                cat_affinity,
-                subcat_affinity,
-                cat_entropy,
-                exp_decay,
-                bayesian_ctr,
-                popularity,
-                cross_term,
-            ])
+            if getattr(self, "train_priors", None):
+                feats = extract_ranking_features(
+                    sim=sim,
+                    cat_affinity=cat_affinity,
+                    subcat_affinity=subcat_affinity,
+                    cat_entropy=cat_entropy,
+                    session_timestamp=time.time(),
+                    article_id=cid,
+                    priors=self.train_priors,
+                )
+            else:
+                exp_decay = math.exp(-12.0 / 24.0)
+                imps = self.article_impressions_prior.get(cid, 100)
+                clicks = int(imps * self.article_ctr_prior.get(cid, 0.05))
+                bayesian_ctr = (clicks + 5.0) / float(imps + 100.0)
+                popularity = math.log1p(imps)
+                cross_term = sim * cat_affinity
+                feats = [
+                    sim,
+                    cat_affinity,
+                    subcat_affinity,
+                    cat_entropy,
+                    exp_decay,
+                    bayesian_ctr,
+                    popularity,
+                    cross_term,
+                ]
+
+            feature_matrix.append(feats)
             valid_candidates.append((cid, meta, sim))
 
         # Step 4: Ensemble Learning Reranking (Weighted Score Fusion)
